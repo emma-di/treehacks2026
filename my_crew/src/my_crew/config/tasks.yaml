@@ -1,0 +1,83 @@
+risk_assessment_task:
+  description: >
+    Assess patient risk using the following inputs:
+
+    1. Clinical Records (structured and unstructured):
+    {clinical_records}
+
+    2. Real-time Vitals (heart rate, SpO2, blood pressure trends):
+    {real_time_vitals}
+
+    If unstructured data (physician notes, lab history) is missing or sparse,
+    generate a concise clinical summary from the structured data to support
+    your assessment.
+
+    Produce:
+    - A Risk Profile with Numeric_Score (0.0 to 1.0, where higher = higher risk)
+      and Risk_Category (e.g., "Critical", "Stable", "Observation", "Low", "High").
+    - A Nurse Briefing: a short, natural-language summary explaining why the
+      patient is at risk and what to watch for (e.g., "Patient shows a 20% drop
+      in SpO2 over 2 hours; watch for respiratory fatigue.").
+    - Predicted duration of stay (e.g., "2-3 days", "24–48 hours", "1 week").
+
+    CRITICAL - Output format: Your final answer must be ONLY a single raw JSON
+    object with exactly these keys at the top level: "risk_profile",
+    "nurse_briefing", "predicted_duration_of_stay". The "risk_profile" value
+    must be an object with "numeric_score" (number between 0 and 1) and
+    "risk_category" (string). Do NOT output a schema, type definition,
+    "properties", "required", or "description". Output ONLY the data.
+    Example shape: {"risk_profile": {"numeric_score": 0.4, "risk_category": "Observation"}, "nurse_briefing": "Patient exhibits...", "predicted_duration_of_stay": "24-48 hours"}
+  expected_output: >
+    A single JSON object with keys risk_profile (object: numeric_score, risk_category),
+    nurse_briefing (string), predicted_duration_of_stay (string). No schema or metadata—only the data.
+  agent: risk_agent
+
+resource_task:
+  description: >
+    Using the staff roster and hospital map below, produce a Feasibility List of
+    best-match resources for the given risk profile.
+
+    1. Staff Roster (active nurses, certifications, current load):
+    {staff_roster}
+
+    2. Hospital Map/Space (available beds, room types, equipment status):
+    {hospital_map}
+
+    3. Risk profile context (use this to choose required certifications and room types):
+    {risk_profile_context}
+
+    Use the filter_resources tool with:
+    - staff_roster and hospital_map from above (pass them as JSON strings),
+    - required_certifications: e.g. "ICU-certified" for Critical, "ER-specialist" or "General" for lower risk,
+    - allowed_room_types: e.g. "Negative Pressure,Isolation" for Critical, "General" for Stable,
+    - max_nurse_load: e.g. 5 or 6 to prefer nurses with fewer current patients.
+
+    Then summarize the tool's result into a clear Feasibility List (e.g. "Room 302 is
+    open and Nurse Sarah has the lowest patient load and the correct certification
+    for this risk profile.").
+  expected_output: >
+    A Feasibility List: a filtered list of best-match resources, with one line per
+    (nurse, room) option (e.g. "Room 302 is open and Nurse Sarah has the lowest
+    patient load and the correct certification for this risk profile.").
+  agent: resource_agent
+
+orchestrator_task:
+  description: >
+    Produce one Final Allocation per patient (binding assignment or Waitlist Position).
+
+    You receive a list of patients as JSON: {patients_json}
+
+    Each patient in the array has: patient_id, risk_profile (JSON with risk_profile.numeric_score and
+    risk_profile.risk_category), and feasibility_options (JSON array of nurse_name, room_id, room_type, nurse_load).
+
+    - If there is ONE patient: you may call greedy_allocation(patient_id, risk_profile, feasibility_options)
+      and present the single allocation.
+    - If there are MULTIPLE patients: call greedy_allocation_batch(patients_json) with the full array.
+      The batch tool returns one assignment per patient (highest risk gets first pick; no double-booking).
+      Present each assignment: e.g. "Assign Patient A to Room 405 under Nurse Miller", "Assign Patient B to Room 412 under Nurse Chen", and "Patient C → Waitlist position 2".
+
+    Also output the full structured JSON (single allocation object or batch with "allocations" array) for downstream use.
+  expected_output: >
+    One assignment per patient: a human-readable summary for each (e.g. "Assign Patient A to Room 405 under Nurse Miller"),
+    then the full structured JSON (single allocation or batch.allocations array). Same schema for patient and nurse view.
+  agent: orchestrator_agent
