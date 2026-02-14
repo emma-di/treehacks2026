@@ -18,6 +18,15 @@ Next, navigate to your project directory and install the dependencies:
 ```bash
 crewai install
 ```
+
+**macOS: LightGBM (Model 2) needs OpenMP.** If you see `Library not loaded: @rpath/libomp.dylib` when running the CSV pipeline, install libomp:
+```bash
+brew install libomp
+```
+Place your `.pkl` model files in `my_crew/saved_models/` (e.g. `task1_fl_model.pkl`, `task2_fl_model.pkl`).
+
+**Model 2 (length of stay) input format** follows the training script (`train_2.py`): features are the CSV with `encounter_id` and `LoS` dropped; categorical columns use `fillna('missing')` then label encoding; then `fillna(0)` and float. For correct feature order and count, you can pass a reference CSV (e.g. `data/train_client_1_task_2.csv` or `data/test_task_2.csv`) when creating `ModelInference`: `ModelInference(demo_patients_path=..., task2_reference_csv="path/to/train_client_1_task_2.csv")`. The pipeline will then build the feature vector in the same column order as the training data (missing columns filled with 0).
+
 ### Customizing
 
 **Add your `OPENAI_API_KEY` into the `.env` file**
@@ -67,6 +76,29 @@ CREWAI_SCENARIO=waitlist crewai run
 # Multi-patient (one assignment per patient; batch allocation, no double-booking)
 CREWAI_SCENARIO=multi crewai run
 ```
+
+### CSV-driven pipeline (no LLM)
+
+Run the scheduler from **demo_patients.csv**: one patient per row, model 1 (bed need) → if >35% then model 2 (length of stay), then room assignment and nurse schedule for the **next 12 hours only** (4 different nurses per occupied room, 15/20/30 min slots). Start/stop are floats in hours; unassigned use -1.
+
+```bash
+# From my_crew directory (after uv install / crewai install)
+uv run run_from_csv
+# or
+python -m my_crew.main  # then call run_from_csv() from code
+```
+
+Optional env: `CREWAI_CSV_PATH`, `CREWAI_ROOM_IDS` (comma-separated), `CREWAI_ROSTER` (JSON array of `{ "name", "load" }`). Output is written to **`output/`**: `final_allocations.json`, `patient_view.json`, `nurse_view.json`, `hospital_space.json`.
+
+### Output files
+
+After each run, final allocations are written under **`output/`** (relative to the project root):
+
+| File | Description |
+|------|-------------|
+| `output/final_allocations.json` | Full orchestrator output: one record per assigned patient (patient, room, nurse_rounds). |
+| `output/nurse_view.json` | Nurse-centric view: each nurse with their check rounds (patient_id, room_id, start, stop in hours). |
+| `output/patient_view.json` | Patient-centric view: each patient with room, start/stop, and nurse_rounds. |
 
 ## Understanding Your Crew
 

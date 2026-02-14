@@ -1,3 +1,6 @@
 .env
 __pycache__/
 .DS_Store
+output/
+saved_models/
+*.pkl

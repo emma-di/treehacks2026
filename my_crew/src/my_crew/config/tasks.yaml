@@ -1,6 +1,8 @@
 risk_assessment_task:
   description: >
-    Assess patient risk using the following inputs:
+    Assess patient risk and whether they need a bed using the following inputs.
+
+    Patient identifier for model tools (from demo_patients.csv): {encounter_id}
 
     1. Clinical Records (structured and unstructured):
     {clinical_records}
@@ -8,28 +10,27 @@ risk_assessment_task:
     2. Real-time Vitals (heart rate, SpO2, blood pressure trends):
     {real_time_vitals}
 
-    If unstructured data (physician notes, lab history) is missing or sparse,
-    generate a concise clinical summary from the structured data to support
-    your assessment.
+    WORKFLOW - Call the two model tools in order (data is from demo_patients.csv):
+    - First call predict_bed_need with encounter_id (or row_index). If the returned probability
+      is less than 35%, the patient does NOT need a bed: set needs_bed=false, length_of_stay_bed=null
+      and move to next patient (do not call the second tool). If 35% or higher, the patient likely
+      needs a bed: call predict_length_of_stay with the same encounter_id, then set needs_bed=true
+      and length_of_stay_bed to the predicted value (e.g. "4.2 days").
+    - When needs_bed is true, the Resource Agent will be triggered for this patient.
 
-    Produce:
-    - A Risk Profile with Numeric_Score (0.0 to 1.0, where higher = higher risk)
-      and Risk_Category (e.g., "Critical", "Stable", "Observation", "Low", "High").
-    - A Nurse Briefing: a short, natural-language summary explaining why the
-      patient is at risk and what to watch for (e.g., "Patient shows a 20% drop
-      in SpO2 over 2 hours; watch for respiratory fatigue.").
-    - Predicted duration of stay (e.g., "2-3 days", "24–48 hours", "1 week").
+    Also produce (from your clinical assessment):
+    - Risk Profile: numeric_score (0.0–1.0), risk_category (e.g. Critical, Observation, Stable).
+    - Nurse Briefing: short summary of why the patient is at risk and what to watch for.
+    - Predicted duration of stay (e.g. "2-3 days", "24–48 hours").
 
-    CRITICAL - Output format: Your final answer must be ONLY a single raw JSON
-    object with exactly these keys at the top level: "risk_profile",
-    "nurse_briefing", "predicted_duration_of_stay". The "risk_profile" value
-    must be an object with "numeric_score" (number between 0 and 1) and
-    "risk_category" (string). Do NOT output a schema, type definition,
-    "properties", "required", or "description". Output ONLY the data.
-    Example shape: {"risk_profile": {"numeric_score": 0.4, "risk_category": "Observation"}, "nurse_briefing": "Patient exhibits...", "predicted_duration_of_stay": "24-48 hours"}
+    CRITICAL - Output format: Your final answer must be ONLY a single raw JSON object with exactly
+    these keys: "risk_profile", "nurse_briefing", "predicted_duration_of_stay", "needs_bed",
+    "length_of_stay_bed". risk_profile = {numeric_score, risk_category}. needs_bed = true/false.
+    length_of_stay_bed = string (e.g. "4.2 days") when needs_bed is true, else null.
+    Do NOT output a schema or "properties"/"required"/"description". Output ONLY the data.
   expected_output: >
-    A single JSON object with keys risk_profile (object: numeric_score, risk_category),
-    nurse_briefing (string), predicted_duration_of_stay (string). No schema or metadata—only the data.
+    A single JSON object with risk_profile, nurse_briefing, predicted_duration_of_stay,
+    needs_bed (boolean), length_of_stay_bed (string or null). When needs_bed is true, Resource Agent is triggered.
   agent: risk_agent
 
 resource_task:
@@ -63,21 +64,26 @@ resource_task:
 
 orchestrator_task:
   description: >
-    Produce one Final Allocation per patient (binding assignment or Waitlist Position).
+    Produce one Final Allocation per patient (binding assignment or Waitlist Position), then output in the time-based schema.
 
     You receive a list of patients as JSON: {patients_json}
 
     Each patient in the array has: patient_id, risk_profile (JSON with risk_profile.numeric_score and
     risk_profile.risk_category), and feasibility_options (JSON array of nurse_name, room_id, room_type, nurse_load).
 
-    - If there is ONE patient: you may call greedy_allocation(patient_id, risk_profile, feasibility_options)
-      and present the single allocation.
-    - If there are MULTIPLE patients: call greedy_allocation_batch(patients_json) with the full array.
-      The batch tool returns one assignment per patient (highest risk gets first pick; no double-booking).
-      Present each assignment: e.g. "Assign Patient A to Room 405 under Nurse Miller", "Assign Patient B to Room 412 under Nurse Chen", and "Patient C → Waitlist position 2".
+    - If there is ONE patient: call greedy_allocation(patient_id, risk_profile, feasibility_options).
+    - If there are MULTIPLE patients: call greedy_allocation_batch(patients_json). The batch tool returns one
+      assignment per patient (highest risk first; no double-booking).
 
-    Also output the full structured JSON (single allocation object or batch with "allocations" array) for downstream use.
+    Your final output MUST use this time-based schema (one record per ASSIGNED patient). All start/stop times are FLOAT, in HOURS (1 = hour 1):
+
+    - Patient: { id, room, start, stop } — id = patient_id, room = room_id. start = 0 (admission). stop = duration in hours (e.g. 48 for 48 hours, 72 for 3 days).
+    - Room: { id, start, stop } — id = room_id. start and stop in hours (same as patient; e.g. start 0, stop 72). When stop is reached, the room is available for the next patient.
+    - Nurse: for each check round, { nurse, start, stop } — start and stop in hours (float). Nurse rotation is based on the feasibility list: nurse_check_schedule.nurse_names comes from feasibility options. When the tool output includes nurse_rounds, use them exactly (they rotate by feasibility list and are conflict-free). Otherwise assign by rotating through nurse_check_schedule.nurse_names.
+
+    Convert duration_of_stay (e.g. "24–48 hours", "5-7 days") to hours for patient/room stop: 24–48 h → 36, 3 days → 72, 5–7 days → 144. Use nurse_rounds from the tool when available.
+
+    For waitlisted patients, omit from the allocations array or do not include room/nurse times.
   expected_output: >
-    One assignment per patient: a human-readable summary for each (e.g. "Assign Patient A to Room 405 under Nurse Miller"),
-    then the full structured JSON (single allocation or batch.allocations array). Same schema for patient and nurse view.
+    Structured output with "allocations" array. Each element has: patient { id, room, start, stop }, room { id, start, stop }, nurse_rounds [ { nurse, start, stop }, ... ]. All start/stop are float hours (1 = hour 1). Use nurse_rounds from the tool when present. Output ONLY valid JSON matching this schema.
   agent: orchestrator_agent

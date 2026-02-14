@@ -5,12 +5,19 @@ description = "my_crew using crewAI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.10,<3.14"
 dependencies = [
-    "crewai[tools]==1.9.3"
+    "crewai[tools]==1.9.3",
+    "pandas",
+    "numpy",
+    "joblib",
+    "scikit-learn",
+    "lightgbm",
 ]
 
 [project.scripts]
 my_crew = "my_crew.main:run"
 run_crew = "my_crew.main:run"
+run_from_csv = "my_crew.main:run_from_csv"
+run_two_batches_25 = "my_crew.main:run_two_batches_25"
 train = "my_crew.main:train"
 replay = "my_crew.main:replay"
 test = "my_crew.main:test"
