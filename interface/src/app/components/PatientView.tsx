@@ -649,11 +649,11 @@ export function PatientView({ initialPatientId }: PatientViewProps) {
                 className="flex items-center gap-3 group w-full"
               >
                 <h2 className="text-2xl font-bold text-gray-900">ER / Pending Admissions</h2>
-                <div className="h-0.5 flex-1 bg-red-300" />
+                <div className="h-0.5 flex-1 bg-blue-300" />
                 {erPendingExpanded ? (
-                  <ChevronUp className="size-6 text-red-600 group-hover:scale-110 transition-transform" />
+                  <ChevronUp className="size-6 text-blue-600 group-hover:scale-110 transition-transform" />
                 ) : (
-                  <ChevronDown className="size-6 text-red-600 group-hover:scale-110 transition-transform" />
+                  <ChevronDown className="size-6 text-blue-600 group-hover:scale-110 transition-transform" />
                 )}
               </button>
             </div>

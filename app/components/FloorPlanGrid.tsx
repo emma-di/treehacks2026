@@ -1,9 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ChevronDown, ChevronUp } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { X } from 'lucide-react';
 import Link from 'next/link';
 import { findProviderByName } from './ProviderView';
+
+const HospitalMap3D = dynamic(
+  () => import('./HospitalMap3D').then((m) => m.HospitalMap3D),
+  { ssr: false }
+);
 
 // Mock data for room schedules - now with blocks spanning multiple hours
 const generateRoomSchedule = (roomNumber: string) => {
@@ -93,17 +99,8 @@ interface FloorPlanGridProps {
 export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
     const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
     const [selectedFloor, setSelectedFloor] = useState(1);
-    const [isFloorSelectorVisible, setIsFloorSelectorVisible] = useState(true);
 
-    const floors = [1, 2, 3, 4, 5];
-
-    const rooms = Array.from({ length: rows * cols }, (_, i) => {
-        const roomNumber = selectedFloor * 100 + i;
-        return {
-            id: `R${roomNumber}`,
-            number: roomNumber,
-        };
-    });
+    const floors = [1, 2, 3, 4];
 
     const handleRoomClick = (roomId: string) => {
         setSelectedRoom(roomId);
@@ -117,59 +114,41 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
 
     return (
         <div className="flex gap-6 h-full overflow-hidden">
-            {/* Floor Plan Grid */}
+            {/* 3D Hospital Map */}
             <div
-                className="bg-white rounded-lg shadow-lg p-8 flex items-center justify-center transition-all duration-700 ease-in-out"
+                className="bg-white rounded-lg shadow-lg p-4 flex flex-col items-stretch transition-all duration-700 ease-in-out"
                 style={{
                     flex: selectedRoom ? '0 0 60%' : '1 1 100%',
-                    transform: selectedRoom ? 'translateX(0)' : 'translateX(0)',
                 }}
             >
-                <div className="w-full max-w-3xl">
-                    <div
-                        className="grid gap-2"
-                        style={{
-                            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-                        }}
-                    >
-                        {rooms.map((room) => (
-                            <button
-                                key={room.id}
-                                onClick={() => handleRoomClick(room.id)}
-                                className={`aspect-square border-2 rounded-lg transition-all duration-300 hover:shadow-md flex items-center justify-center ${selectedRoom === room.id
-                                    ? 'bg-blue-100 border-blue-500 shadow-lg scale-105'
-                                    : 'bg-gray-50 border-gray-300 hover:border-blue-300 hover:bg-blue-50'
-                                    }`}
-                            >
-                                <span className={`text-sm font-medium ${selectedRoom === room.id ? 'text-blue-700' : 'text-gray-600'
-                                    }`}>
-                                    {room.id}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Floor selector and help text */}
-                    <div className="flex items-center justify-center gap-4 mt-6">
-                        <p className="text-sm text-gray-500">
-                            Click on any room to view its schedule
-                        </p>
-                        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-200">
-                            <span className="text-xs text-gray-600 font-medium">Floor</span>
-                            <div className="flex gap-1">
-                                {floors.map((floor) => (
-                                    <button
-                                        key={floor}
-                                        onClick={() => setSelectedFloor(floor)}
-                                        className={`w-7 h-7 rounded text-xs font-semibold transition-all duration-300 ${selectedFloor === floor
-                                            ? 'bg-cyan-400 text-white shadow-sm'
-                                            : 'bg-white text-gray-600 hover:bg-gray-100'
-                                            }`}
-                                    >
-                                        {floor}
-                                    </button>
-                                ))}
-                            </div>
+                <div className="flex-1 min-h-[420px] flex flex-col">
+                    <HospitalMap3D
+                        rows={rows}
+                        cols={cols}
+                        selectedFloor={selectedFloor}
+                        selectedRoom={selectedRoom}
+                        onRoomSelect={handleRoomClick}
+                    />
+                </div>
+                <div className="flex items-center justify-center gap-4 mt-4">
+                    <p className="text-sm text-gray-500">
+                        Click a room to view schedule · Right-drag to pan · Left-drag to rotate · Scroll to zoom
+                    </p>
+                    <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-200">
+                        <span className="text-xs text-gray-600 font-medium">Floor</span>
+                        <div className="flex gap-1">
+                            {floors.map((floor) => (
+                                <button
+                                    key={floor}
+                                    onClick={() => setSelectedFloor(floor)}
+                                    className={`w-7 h-7 rounded text-xs font-semibold transition-all duration-300 ${selectedFloor === floor
+                                        ? 'bg-cyan-400 text-white shadow-sm'
+                                        : 'bg-white text-gray-600 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    {floor}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
