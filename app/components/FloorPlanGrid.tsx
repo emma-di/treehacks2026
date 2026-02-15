@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { flushSync } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
 import Link from 'next/link';
@@ -103,7 +104,9 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
     const floors = [1, 2, 3, 4];
 
     const handleRoomClick = (roomId: string) => {
-        setSelectedRoom(roomId);
+        flushSync(() => {
+            setSelectedRoom(roomId);
+        });
     };
 
     const handleClose = () => {
