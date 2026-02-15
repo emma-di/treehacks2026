@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, ChevronDown, ChevronUp, X, Mic, Square, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, X, Mic, Square, FileText, ChevronLeft, ChevronRight, Mail, MessageSquare } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getNurseAssignments, formatTime, getPatientInRoom, getShortPatientId, getUniqueNurseIds } from '../lib/scheduleData';
@@ -110,6 +110,12 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
     const [summaryModal, setSummaryModal] = useState<SummaryModal>(null);
     const [recordingError, setRecordingError] = useState<string | null>(null);
     const [uploadingPatientId, setUploadingPatientId] = useState<string | null>(null);
+    const [briefingSendStatus, setBriefingSendStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+    const [briefingError, setBriefingError] = useState<string | null>(null);
+    const [feedbackOpen, setFeedbackOpen] = useState(false);
+    const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+    const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+    const [feedbackForm, setFeedbackForm] = useState({ shiftDate: '', overwhelmed: false, missedVisits: 0, acuityAdjustment: '', comments: '' });
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const recordingProviderIdRef = useRef<string | null>(null);
@@ -171,6 +177,66 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
             setRecordingPatientId(null);
         }
     }, [recordingPatientId]);
+
+    const openFeedback = useCallback(() => {
+        setFeedbackForm({
+            shiftDate: new Date().toISOString().slice(0, 10),
+            overwhelmed: false,
+            missedVisits: 0,
+            acuityAdjustment: '',
+            comments: '',
+        });
+        setFeedbackSuccess(false);
+        setFeedbackOpen(true);
+    }, []);
+
+    const submitFeedback = useCallback(async () => {
+        if (!selectedProvider || selectedProvider.type !== 'nurse') return;
+        setFeedbackSubmitting(true);
+        try {
+            const res = await fetch('/api/nurse-feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nurseId: selectedProvider.id,
+                    shiftDate: feedbackForm.shiftDate || new Date().toISOString().slice(0, 10),
+                    overwhelmed: feedbackForm.overwhelmed,
+                    missedVisits: feedbackForm.missedVisits || undefined,
+                    acuityAdjustment: feedbackForm.acuityAdjustment || undefined,
+                    comments: feedbackForm.comments || undefined,
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to submit feedback');
+            setFeedbackSuccess(true);
+            setTimeout(() => { setFeedbackOpen(false); setFeedbackSuccess(false); }, 1500);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setFeedbackSubmitting(false);
+        }
+    }, [selectedProvider, feedbackForm]);
+
+    const sendBriefings = useCallback(async () => {
+        if (!selectedProvider || selectedProvider.type !== 'nurse') return;
+        setBriefingError(null);
+        setBriefingSendStatus('sending');
+        try {
+            const res = await fetch('/api/send-nurse-briefing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nurseId: selectedProvider.id }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to send briefings');
+            setBriefingSendStatus('success');
+            setTimeout(() => setBriefingSendStatus('idle'), 3000);
+        } catch (e) {
+            setBriefingError(e instanceof Error ? e.message : 'Failed to send briefings');
+            setBriefingSendStatus('error');
+            setTimeout(() => { setBriefingSendStatus('idle'); setBriefingError(null); }, 5000);
+        }
+    }, [selectedProvider]);
 
     // Handle initial provider selection from URL
     useEffect(() => {
@@ -409,13 +475,39 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
                         <h3 className="text-2xl font-bold text-gray-900">
                             Selected Provider: <span className="text-blue-600">{selectedProvider.name}</span>
                         </h3>
-                        <button
-                            onClick={() => setSelectedProvider(null)}
-                            className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <X className="size-6 text-gray-500" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {selectedProvider.type === 'nurse' && (
+                                <>
+                                    <button
+                                        type="button"
+                                        onClick={openFeedback}
+                                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200"
+                                    >
+                                        <MessageSquare className="size-4" />
+                                        Feedback
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={sendBriefings}
+                                        disabled={briefingSendStatus === 'sending'}
+                                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none"
+                                    >
+                                        <Mail className="size-4" />
+                                        {briefingSendStatus === 'sending' ? 'Sending…' : briefingSendStatus === 'success' ? 'Sent' : 'Send briefings'}
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={() => setSelectedProvider(null)}
+                                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <X className="size-6 text-gray-500" />
+                            </button>
+                        </div>
                     </div>
+                    {selectedProvider.type === 'nurse' && briefingError && (
+                        <div className="mb-3 px-3 py-2 text-sm text-red-700 bg-red-50 rounded-lg">{briefingError}</div>
+                    )}
 
                     {/* Schedule Table */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -566,6 +658,76 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
                                     })()}
                                 </>
                             )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
+            <Dialog open={feedbackOpen} onOpenChange={(open) => !open && setFeedbackOpen(false)}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Shift feedback</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-gray-600">Optional. Your answers help improve future scheduling.</p>
+                    {feedbackSuccess ? (
+                        <p className="text-sm text-green-700 font-medium">Thank you — feedback saved.</p>
+                    ) : (
+                        <div className="space-y-4 pt-2">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Shift date</label>
+                                <input
+                                    type="date"
+                                    value={feedbackForm.shiftDate}
+                                    onChange={(e) => setFeedbackForm((f) => ({ ...f, shiftDate: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                />
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={feedbackForm.overwhelmed}
+                                    onChange={(e) => setFeedbackForm((f) => ({ ...f, overwhelmed: e.target.checked }))}
+                                    className="rounded border-gray-300"
+                                />
+                                <span className="text-sm text-gray-700">This shift was overwhelming</span>
+                            </label>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Missed or rushed visits (number)</label>
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={20}
+                                    value={feedbackForm.missedVisits || ''}
+                                    onChange={(e) => setFeedbackForm((f) => ({ ...f, missedVisits: parseInt(e.target.value, 10) || 0 }))}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Acuity / workload note (optional)</label>
+                                <textarea
+                                    value={feedbackForm.acuityAdjustment}
+                                    onChange={(e) => setFeedbackForm((f) => ({ ...f, acuityAdjustment: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm min-h-[60px]"
+                                    placeholder="e.g. several high-acuity patients"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Comments (optional)</label>
+                                <textarea
+                                    value={feedbackForm.comments}
+                                    onChange={(e) => setFeedbackForm((f) => ({ ...f, comments: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm min-h-[60px]"
+                                    placeholder="Anything else for scheduling"
+                                />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={submitFeedback}
+                                disabled={feedbackSubmitting}
+                                className="w-full py-2 px-4 text-sm font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                            >
+                                {feedbackSubmitting ? 'Submitting…' : 'Submit feedback'}
+                            </button>
                         </div>
                     )}
                 </DialogContent>

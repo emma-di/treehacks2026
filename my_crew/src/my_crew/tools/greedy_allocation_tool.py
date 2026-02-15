@@ -28,7 +28,7 @@ class GreedyAllocationToolInput(BaseModel):
     )
     feasibility_options: str = Field(
         ...,
-        description="JSON string: array of options, each with 'nurse_name', 'room_id', 'room_type', 'nurse_load'. From Resource Agent feasibility list in structured form.",
+        description="JSON string: array of options, each with 'nurse_name', 'room_id', 'room_type', 'nurse_load', and optional 'certifications' (list of strings). Nurses with certifications that match the patient's risk get higher priority.",
     )
 
 
@@ -41,6 +41,25 @@ ROOM_FIT: dict[str, list[str]] = {
     "Low": ["General"],
 }
 DEFAULT_ORDER = ["Negative Pressure", "Isolation", "General"]
+
+# Risk category → preferred/required certifications (patient who needs it most gets best-certified nurse)
+RISK_CATEGORY_REQUIRED_CERTS: dict[str, list[str]] = {
+    "Critical": ["ICU-certified", "ACLS"],
+    "High": ["ICU-certified"],
+    "Observation": ["ICU-certified", "ER-specialist"],
+    "Stable": ["ER-specialist", "General"],
+    "Low": ["General"],
+}
+DEFAULT_REQUIRED_CERTS = ["General"]
+
+
+def _cert_match_score(required_certs: list[str], nurse_certs: list[str]) -> float:
+    """Higher = better match. Prefer nurses who have more of the required certifications."""
+    if not required_certs:
+        return 0.0
+    nurse_set = {c.strip() for c in nurse_certs if isinstance(c, str)}
+    matches = sum(1 for c in required_certs if c.strip() in nurse_set)
+    return matches / max(len(required_certs), 1)
 
 
 def _room_match_score(risk_category: str, room_type: str) -> float:
@@ -207,12 +226,16 @@ class GreedyAllocationTool(BaseTool):
 
         # Greedy: score each option (room fit + load), pick max
         scored = []
+        required_certs = RISK_CATEGORY_REQUIRED_CERTS.get(risk_cat, DEFAULT_REQUIRED_CERTS)
         for opt in options:
             room_type = opt.get("room_type") or opt.get("room_type") or "General"
             nurse_load = int(opt.get("nurse_load") or opt.get("current_load") or 0)
+            raw_certs = opt.get("certifications") or opt.get("certs") or []
+            nurse_certs = raw_certs if isinstance(raw_certs, list) else [raw_certs]
             room_score = _room_match_score(risk_cat, room_type)
             load_sc = _load_score(nurse_load)
-            total = room_score + load_sc  # equal weight; can tune
+            cert_sc = _cert_match_score(required_certs, nurse_certs)
+            total = room_score + load_sc + cert_sc  # cert match: prefer nurse who best matches patient need
             scored.append((total, opt))
 
         scored.sort(key=lambda x: -x[0])
@@ -411,14 +434,18 @@ class GreedyAllocationBatchTool(BaseTool):
                 )
                 continue
 
-            # Greedy pick from available
+            # Greedy pick from available (room fit + load + certification match)
+            required_certs = RISK_CATEGORY_REQUIRED_CERTS.get(risk_cat, DEFAULT_REQUIRED_CERTS)
             scored = []
             for opt in available:
                 room_type = opt.get("room_type") or "General"
                 nurse_load = int(opt.get("nurse_load") or opt.get("current_load") or 0)
+                raw_certs = opt.get("certifications") or opt.get("certs") or []
+                nurse_certs = raw_certs if isinstance(raw_certs, list) else [raw_certs]
                 room_score = _room_match_score(risk_cat, room_type)
                 load_sc = _load_score(nurse_load)
-                scored.append((room_score + load_sc, opt))
+                cert_sc = _cert_match_score(required_certs, nurse_certs)
+                scored.append((room_score + load_sc + cert_sc, opt))
             scored.sort(key=lambda x: -x[0])
             best = scored[0][1]
             nurse_name = best.get("nurse_name") or best.get("nurse") or "Unknown"

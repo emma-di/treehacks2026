@@ -103,14 +103,15 @@ class FilterResourcesTool(BaseTool):
         if not available_rooms:
             lines.append("No rooms are available for the allowed room types.")
         if nurses and available_rooms:
-            lines.append("Feasibility list (best match first by lowest nurse load and correct certification):")
+            lines.append("Feasibility list (best match first by lowest nurse load and certification match):")
             for i, nurse in enumerate(nurses):
                 room = available_rooms[i % len(available_rooms)]
                 room_id = room["room_id"]
                 room_type = room["room_type"]
+                nurse_certs = nurse.get("certifications") or []
+                cert_list = ",".join(nurse_certs) if nurse_certs else "General"
                 lines.append(
-                    f"- Room {room_id} ({room_type}) is open and Nurse {nurse['name']} has "
-                    f"current load {nurse['current_load']} and the correct certification for this risk profile."
+                    f"- Nurse {nurse['name']} | room_id={room_id} | room_type={room_type} | nurse_load={nurse['current_load']} | certifications=[{cert_list}]"
                 )
             if len(nurses) > len(available_rooms):
                 lines.append(f"(Additional {len(nurses) - len(available_rooms)} nurse(s) match but no extra rooms.)")

@@ -8,19 +8,19 @@
     },
     {
       "id": "644e8f9e-d2bc-41bc-a0a8-dbeefaac4bcf",
-      "room": "R1",
+      "room": "R7",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "8db55a98-2954-4f41-a13b-951fe709ace2",
-      "room": "R2",
+      "room": "R23",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "85a9a3b1-2ef1-4dbe-ace9-b856751ad156",
-      "room": "R3",
+      "room": "R5",
       "start": 0.0,
       "stop": 30.0
     },
@@ -32,43 +32,43 @@
     },
     {
       "id": "a6a64186-e6f1-4f9e-9f41-38b2e5634560",
-      "room": "R4",
+      "room": "R26",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "71d3768b-a3b0-489b-aa25-6867d314a772",
-      "room": "R5",
+      "room": "R4",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "15fa0ed7-6d2a-427d-9e7b-fb750b554c8e",
-      "room": "R6",
+      "room": "R15",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "b4b71380-9d3f-403e-88c2-e63a849cfa23",
-      "room": "R7",
+      "room": "R2",
       "start": 0.0,
       "stop": 26.0
     },
     {
       "id": "4a2c94e3-35b8-47d3-bd14-e1bd05369c55",
-      "room": "R8",
+      "room": "R16",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "cd494324-ee05-4357-a040-07061c4b549c",
-      "room": "R9",
+      "room": "R14",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "90bfd7ce-4c3b-46a9-b12b-851cdce6188d",
-      "room": "R10",
+      "room": "R22",
       "start": 0.0,
       "stop": 30.0
     },
@@ -80,49 +80,49 @@
     },
     {
       "id": "6354a8d7-bc98-41d4-bd18-a11870352d96",
-      "room": "R12",
+      "room": "R28",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "03542630-1e44-4b9e-a920-cc26996c1f5a",
-      "room": "R13",
+      "room": "R12",
       "start": 0.0,
       "stop": 30.0
     },
     {
       "id": "7bdd9544-ae27-4826-9466-a41875484cd4",
-      "room": "R14",
+      "room": "R20",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "7b762e41-a625-4a6f-92db-66f95551f701",
-      "room": "R15",
+      "room": "R13",
       "start": 0.0,
       "stop": 30.0
     },
     {
       "id": "6151b701-a7f6-45fc-99a0-501a97ad86fe",
-      "room": "R16",
+      "room": "R27",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "d32d7d2f-a349-4878-be81-1831b6057d8b",
-      "room": "R17",
+      "room": "R10",
       "start": 0.0,
       "stop": 26.0
     },
     {
       "id": "6eac9cb8-e5bb-413f-b484-965c0483150f",
-      "room": "R18",
+      "room": "R19",
       "start": 0.0,
       "stop": 30.0
     },
     {
       "id": "1fe51fc1-5d9a-48af-baef-e492f654fb66",
-      "room": "R19",
+      "room": "R1",
       "start": 0.0,
       "stop": 25.0
     },
@@ -140,13 +140,13 @@
     },
     {
       "id": "a806406e-1ae3-46a3-9aa8-6a9de34e3ae6",
-      "room": "R20",
+      "room": "R24",
       "start": 0.0,
       "stop": 25.0
     },
     {
       "id": "026d0d11-0f9a-4449-8ca3-8cde4f7f9e9f",
-      "room": "R21",
+      "room": "R8",
       "start": 0.0,
       "stop": 25.0
     }
@@ -160,12 +160,12 @@
     {
       "id": "R2",
       "start": 0.0,
-      "stop": 25.0
+      "stop": 26.0
     },
     {
       "id": "R3",
-      "start": 0.0,
-      "stop": 30.0
+      "start": -1,
+      "stop": -1
     },
     {
       "id": "R4",
@@ -175,17 +175,17 @@
     {
       "id": "R5",
       "start": 0.0,
-      "stop": 25.0
+      "stop": 30.0
     },
     {
       "id": "R6",
-      "start": 0.0,
-      "stop": 25.0
+      "start": -1,
+      "stop": -1
     },
     {
       "id": "R7",
       "start": 0.0,
-      "stop": 26.0
+      "stop": 25.0
     },
     {
       "id": "R8",
@@ -194,13 +194,13 @@
     },
     {
       "id": "R9",
-      "start": 0.0,
-      "stop": 25.0
+      "start": -1,
+      "stop": -1
     },
     {
       "id": "R10",
       "start": 0.0,
-      "stop": 30.0
+      "stop": 26.0
     },
     {
       "id": "R11",
@@ -210,7 +210,7 @@
     {
       "id": "R12",
       "start": 0.0,
-      "stop": 25.0
+      "stop": 30.0
     },
     {
       "id": "R13",
@@ -225,7 +225,7 @@
     {
       "id": "R15",
       "start": 0.0,
-      "stop": 30.0
+      "stop": 25.0
     },
     {
       "id": "R16",
@@ -234,18 +234,18 @@
     },
     {
       "id": "R17",
-      "start": 0.0,
-      "stop": 26.0
+      "start": -1,
+      "stop": -1
     },
     {
       "id": "R18",
-      "start": 0.0,
-      "stop": 30.0
+      "start": -1,
+      "stop": -1
     },
     {
       "id": "R19",
       "start": 0.0,
-      "stop": 25.0
+      "stop": 30.0
     },
     {
       "id": "R20",
@@ -254,23 +254,23 @@
     },
     {
       "id": "R21",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R22",
+      "start": 0.0,
+      "stop": 30.0
+    },
+    {
+      "id": "R23",
       "start": 0.0,
       "stop": 25.0
     },
     {
-      "id": "R22",
-      "start": -1,
-      "stop": -1
-    },
-    {
-      "id": "R23",
-      "start": -1,
-      "stop": -1
-    },
-    {
       "id": "R24",
-      "start": -1,
-      "stop": -1
+      "start": 0.0,
+      "stop": 25.0
     },
     {
       "id": "R25",
@@ -279,18 +279,18 @@
     },
     {
       "id": "R26",
-      "start": -1,
-      "stop": -1
+      "start": 0.0,
+      "stop": 25.0
     },
     {
       "id": "R27",
-      "start": -1,
-      "stop": -1
+      "start": 0.0,
+      "stop": 25.0
     },
     {
       "id": "R28",
-      "start": -1,
-      "stop": -1
+      "start": 0.0,
+      "stop": 25.0
     },
     {
       "id": "R29",
@@ -429,482 +429,482 @@
       "stop": 9.25
     },
     {
-      "id": "Nurse_13",
+      "id": "Nurse_4",
       "room": "R2",
       "start": 0.0,
       "stop": 0.25
     },
     {
-      "id": "Nurse_14",
+      "id": "Nurse_5",
       "room": "R2",
       "start": 3.0,
       "stop": 3.33
     },
     {
-      "id": "Nurse_15",
+      "id": "Nurse_6",
       "room": "R2",
       "start": 6.0,
       "stop": 6.5
     },
     {
-      "id": "Nurse_16",
+      "id": "Nurse_7",
       "room": "R2",
       "start": 9.0,
       "stop": 9.25
     },
     {
       "id": "Nurse_17",
-      "room": "R3",
+      "room": "R4",
       "start": 0.0,
       "stop": 0.25
     },
     {
       "id": "Nurse_18",
-      "room": "R3",
+      "room": "R4",
       "start": 3.0,
       "stop": 3.33
     },
     {
       "id": "Nurse_19",
-      "room": "R3",
+      "room": "R4",
       "start": 6.0,
       "stop": 6.5
     },
     {
       "id": "Nurse_2",
-      "room": "R3",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_20",
-      "room": "R4",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_21",
-      "room": "R4",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_22",
-      "room": "R4",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_23",
       "room": "R4",
       "start": 9.0,
       "stop": 9.25
     },
     {
-      "id": "Nurse_24",
+      "id": "Nurse_13",
       "room": "R5",
       "start": 0.0,
       "stop": 0.25
     },
     {
-      "id": "Nurse_25",
+      "id": "Nurse_14",
       "room": "R5",
       "start": 3.0,
       "stop": 3.33
     },
     {
-      "id": "Nurse_26",
+      "id": "Nurse_15",
       "room": "R5",
       "start": 6.0,
       "stop": 6.5
     },
     {
-      "id": "Nurse_27",
+      "id": "Nurse_16",
       "room": "R5",
       "start": 9.0,
       "stop": 9.25
-    },
-    {
-      "id": "Nurse_28",
-      "room": "R6",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_29",
-      "room": "R6",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_3",
-      "room": "R6",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_30",
-      "room": "R6",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_4",
-      "room": "R7",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_5",
-      "room": "R7",
-      "start": 3.0,
-      "stop": 3.33
     },
     {
       "id": "Nurse_6",
       "room": "R7",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_7",
+      "room": "R7",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_8",
+      "room": "R7",
       "start": 6.0,
       "stop": 6.5
     },
     {
-      "id": "Nurse_7",
+      "id": "Nurse_9",
       "room": "R7",
       "start": 9.0,
       "stop": 9.25
     },
     {
-      "id": "Nurse_8",
+      "id": "Nurse_21",
       "room": "R8",
       "start": 0.0,
       "stop": 0.25
     },
     {
-      "id": "Nurse_9",
+      "id": "Nurse_22",
       "room": "R8",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_23",
+      "room": "R8",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_24",
+      "room": "R8",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_25",
+      "room": "R10",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_26",
+      "room": "R10",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_27",
+      "room": "R10",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_28",
+      "room": "R10",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_29",
+      "room": "R11",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_30",
+      "room": "R11",
       "start": 3.0,
       "stop": 3.33
     },
     {
       "id": "Nurse_1",
-      "room": "R8",
+      "room": "R11",
       "start": 6.0,
       "stop": 6.5
     },
     {
       "id": "Nurse_10",
-      "room": "R8",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_11",
-      "room": "R9",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_12",
-      "room": "R9",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_13",
-      "room": "R9",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_14",
-      "room": "R9",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_15",
-      "room": "R10",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_16",
-      "room": "R10",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_17",
-      "room": "R10",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_18",
-      "room": "R10",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_19",
       "room": "R11",
-      "start": 0.0,
-      "stop": 0.25
+      "start": 9.0,
+      "stop": 9.25
     },
     {
       "id": "Nurse_2",
-      "room": "R11",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_20",
-      "room": "R11",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_21",
-      "room": "R11",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_22",
       "room": "R12",
       "start": 0.0,
       "stop": 0.25
-    },
-    {
-      "id": "Nurse_23",
-      "room": "R12",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_24",
-      "room": "R12",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_25",
-      "room": "R12",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_26",
-      "room": "R13",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_27",
-      "room": "R13",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_28",
-      "room": "R13",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_29",
-      "room": "R13",
-      "start": 9.0,
-      "stop": 9.25
     },
     {
       "id": "Nurse_3",
-      "room": "R14",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_30",
-      "room": "R14",
+      "room": "R12",
       "start": 3.0,
       "stop": 3.33
     },
     {
       "id": "Nurse_4",
-      "room": "R14",
+      "room": "R12",
       "start": 6.0,
       "stop": 6.5
     },
     {
       "id": "Nurse_5",
+      "room": "R12",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_7",
+      "room": "R13",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_8",
+      "room": "R13",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_9",
+      "room": "R13",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_11",
+      "room": "R13",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_19",
+      "room": "R14",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_2",
+      "room": "R14",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_20",
+      "room": "R14",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_3",
       "room": "R14",
       "start": 9.0,
       "stop": 9.25
     },
     {
-      "id": "Nurse_6",
+      "id": "Nurse_5",
       "room": "R15",
       "start": 0.0,
       "stop": 0.25
     },
     {
-      "id": "Nurse_7",
+      "id": "Nurse_6",
       "room": "R15",
       "start": 3.0,
       "stop": 3.33
     },
     {
-      "id": "Nurse_8",
+      "id": "Nurse_7",
       "room": "R15",
       "start": 6.0,
       "stop": 6.5
     },
     {
-      "id": "Nurse_9",
+      "id": "Nurse_8",
       "room": "R15",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_20",
+      "room": "R16",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_20",
+      "room": "R16",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_21",
+      "room": "R16",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_22",
+      "room": "R16",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_23",
+      "room": "R19",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_24",
+      "room": "R19",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_25",
+      "room": "R19",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_26",
+      "room": "R19",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_27",
+      "room": "R20",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_28",
+      "room": "R20",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_29",
+      "room": "R20",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_30",
+      "room": "R20",
       "start": 9.0,
       "stop": 9.25
     },
     {
       "id": "Nurse_10",
-      "room": "R16",
+      "room": "R22",
       "start": 0.0,
       "stop": 0.25
     },
     {
-      "id": "Nurse_11",
-      "room": "R16",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_12",
-      "room": "R16",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_13",
-      "room": "R16",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_14",
-      "room": "R17",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_15",
-      "room": "R17",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_16",
-      "room": "R17",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_17",
-      "room": "R17",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_18",
-      "room": "R18",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_19",
-      "room": "R18",
+      "id": "Nurse_4",
+      "room": "R22",
       "start": 3.0,
       "stop": 3.33
     },
     {
       "id": "Nurse_2",
-      "room": "R18",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_20",
-      "room": "R18",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_21",
-      "room": "R19",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_22",
-      "room": "R19",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_23",
-      "room": "R19",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_24",
-      "room": "R19",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_25",
-      "room": "R20",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_26",
-      "room": "R20",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_27",
-      "room": "R20",
-      "start": 6.0,
-      "stop": 6.5
-    },
-    {
-      "id": "Nurse_28",
-      "room": "R20",
-      "start": 9.0,
-      "stop": 9.25
-    },
-    {
-      "id": "Nurse_29",
-      "room": "R21",
-      "start": 0.0,
-      "stop": 0.25
-    },
-    {
-      "id": "Nurse_3",
-      "room": "R21",
-      "start": 3.0,
-      "stop": 3.33
-    },
-    {
-      "id": "Nurse_30",
-      "room": "R21",
+      "room": "R22",
       "start": 6.0,
       "stop": 6.5
     },
     {
       "id": "Nurse_4",
-      "room": "R21",
+      "room": "R22",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_14",
+      "room": "R23",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_15",
+      "room": "R23",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_16",
+      "room": "R23",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_17",
+      "room": "R23",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_18",
+      "room": "R24",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_19",
+      "room": "R24",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_3",
+      "room": "R24",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_20",
+      "room": "R24",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_3",
+      "room": "R26",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_9",
+      "room": "R26",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_5",
+      "room": "R26",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_6",
+      "room": "R26",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_8",
+      "room": "R27",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_21",
+      "room": "R27",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_22",
+      "room": "R27",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_21",
+      "room": "R27",
+      "start": 9.0,
+      "stop": 9.25
+    },
+    {
+      "id": "Nurse_22",
+      "room": "R28",
+      "start": 0.0,
+      "stop": 0.25
+    },
+    {
+      "id": "Nurse_23",
+      "room": "R28",
+      "start": 3.0,
+      "stop": 3.33
+    },
+    {
+      "id": "Nurse_24",
+      "room": "R28",
+      "start": 6.0,
+      "stop": 6.5
+    },
+    {
+      "id": "Nurse_25",
+      "room": "R28",
       "start": 9.0,
       "stop": 9.25
     }
@@ -915,175 +915,200 @@
       "patient_id": "cabced5f-8a58-4c55-9976-f544a9885196",
       "nurse_briefing": "Patient row 0: bed need probability=0.00%; needs_bed=False; no bed required.",
       "needs_bed": false,
-      "length_of_stay": -1
+      "length_of_stay": -1,
+      "risk_category": "Stable"
     },
     {
       "row_index": 1,
       "patient_id": "644e8f9e-d2bc-41bc-a0a8-dbeefaac4bcf",
       "nurse_briefing": "Patient row 1: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 2,
       "patient_id": "8db55a98-2954-4f41-a13b-951fe709ace2",
       "nurse_briefing": "Patient row 2: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 3,
       "patient_id": "85a9a3b1-2ef1-4dbe-ace9-b856751ad156",
       "nurse_briefing": "Patient row 3: bed need probability=100.00%; needs_bed=True; length_of_stay=30h.",
       "needs_bed": true,
-      "length_of_stay": 30
+      "length_of_stay": 30,
+      "risk_category": "Critical"
     },
     {
       "row_index": 4,
       "patient_id": "3d37ab5b-3c77-4c13-a3b1-ad48c9e87ae0",
       "nurse_briefing": "Patient row 4: bed need probability=0.00%; needs_bed=False; no bed required.",
       "needs_bed": false,
-      "length_of_stay": -1
+      "length_of_stay": -1,
+      "risk_category": "Stable"
     },
     {
       "row_index": 5,
       "patient_id": "a6a64186-e6f1-4f9e-9f41-38b2e5634560",
       "nurse_briefing": "Patient row 5: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 6,
       "patient_id": "71d3768b-a3b0-489b-aa25-6867d314a772",
       "nurse_briefing": "Patient row 6: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 7,
       "patient_id": "15fa0ed7-6d2a-427d-9e7b-fb750b554c8e",
       "nurse_briefing": "Patient row 7: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 8,
       "patient_id": "b4b71380-9d3f-403e-88c2-e63a849cfa23",
       "nurse_briefing": "Patient row 8: bed need probability=99.63%; needs_bed=True; length_of_stay=26h.",
       "needs_bed": true,
-      "length_of_stay": 26
+      "length_of_stay": 26,
+      "risk_category": "Critical"
     },
     {
       "row_index": 9,
       "patient_id": "4a2c94e3-35b8-47d3-bd14-e1bd05369c55",
       "nurse_briefing": "Patient row 9: bed need probability=99.21%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Critical"
     },
     {
       "row_index": 10,
       "patient_id": "cd494324-ee05-4357-a040-07061c4b549c",
       "nurse_briefing": "Patient row 10: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 11,
       "patient_id": "90bfd7ce-4c3b-46a9-b12b-851cdce6188d",
       "nurse_briefing": "Patient row 11: bed need probability=99.99%; needs_bed=True; length_of_stay=30h.",
       "needs_bed": true,
-      "length_of_stay": 30
+      "length_of_stay": 30,
+      "risk_category": "Critical"
     },
     {
       "row_index": 12,
       "patient_id": "7301de10-f265-44f9-af68-577d008f1369",
       "nurse_briefing": "Patient row 12: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 13,
       "patient_id": "6354a8d7-bc98-41d4-bd18-a11870352d96",
       "nurse_briefing": "Patient row 13: bed need probability=98.29%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Critical"
     },
     {
       "row_index": 14,
       "patient_id": "03542630-1e44-4b9e-a920-cc26996c1f5a",
       "nurse_briefing": "Patient row 14: bed need probability=100.00%; needs_bed=True; length_of_stay=30h.",
       "needs_bed": true,
-      "length_of_stay": 30
+      "length_of_stay": 30,
+      "risk_category": "Critical"
     },
     {
       "row_index": 15,
       "patient_id": "7bdd9544-ae27-4826-9466-a41875484cd4",
       "nurse_briefing": "Patient row 15: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 16,
       "patient_id": "7b762e41-a625-4a6f-92db-66f95551f701",
       "nurse_briefing": "Patient row 16: bed need probability=100.00%; needs_bed=True; length_of_stay=30h.",
       "needs_bed": true,
-      "length_of_stay": 30
+      "length_of_stay": 30,
+      "risk_category": "Critical"
     },
     {
       "row_index": 17,
       "patient_id": "6151b701-a7f6-45fc-99a0-501a97ad86fe",
       "nurse_briefing": "Patient row 17: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 18,
       "patient_id": "d32d7d2f-a349-4878-be81-1831b6057d8b",
       "nurse_briefing": "Patient row 18: bed need probability=80.12%; needs_bed=True; length_of_stay=26h.",
       "needs_bed": true,
-      "length_of_stay": 26
+      "length_of_stay": 26,
+      "risk_category": "Critical"
     },
     {
       "row_index": 19,
       "patient_id": "6eac9cb8-e5bb-413f-b484-965c0483150f",
       "nurse_briefing": "Patient row 19: bed need probability=100.00%; needs_bed=True; length_of_stay=30h.",
       "needs_bed": true,
-      "length_of_stay": 30
+      "length_of_stay": 30,
+      "risk_category": "Critical"
     },
     {
       "row_index": 20,
       "patient_id": "1fe51fc1-5d9a-48af-baef-e492f654fb66",
       "nurse_briefing": "Patient row 20: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 21,
       "patient_id": "0136024c-c6d7-4405-83f1-606ab8c887e7",
       "nurse_briefing": "Patient row 21: bed need probability=0.00%; needs_bed=False; no bed required.",
       "needs_bed": false,
-      "length_of_stay": -1
+      "length_of_stay": -1,
+      "risk_category": "Stable"
     },
     {
       "row_index": 22,
       "patient_id": "61163979-1550-4f1f-b579-abee981626a4",
       "nurse_briefing": "Patient row 22: bed need probability=0.00%; needs_bed=False; no bed required.",
       "needs_bed": false,
-      "length_of_stay": -1
+      "length_of_stay": -1,
+      "risk_category": "Stable"
     },
     {
       "row_index": 23,
       "patient_id": "a806406e-1ae3-46a3-9aa8-6a9de34e3ae6",
       "nurse_briefing": "Patient row 23: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     },
     {
       "row_index": 24,
       "patient_id": "026d0d11-0f9a-4449-8ca3-8cde4f7f9e9f",
       "nurse_briefing": "Patient row 24: bed need probability=48.96%; needs_bed=True; length_of_stay=25h.",
       "needs_bed": true,
-      "length_of_stay": 25
+      "length_of_stay": 25,
+      "risk_category": "Observation"
     }
   ]
 }

@@ -17,6 +17,8 @@ import copy
 import json
 import logging
 import os
+import random
+import re
 import time
 from pathlib import Path
 from typing import Any
@@ -35,6 +37,9 @@ NURSES_PER_ROOM = 4
 NURSE_SLOT_DURATIONS_HOURS = (15 / 60, 20 / 60, 30 / 60)
 DEFAULT_NUM_ROOMS = 50
 MAX_PATIENTS_TO_ALLOCATE = 25
+ROOMS_PER_FLOOR = 14
+# Only assign patients to the first 2 floors (floor 0 and 1)
+ASSIGNMENT_FLOORS = 2
 
 
 def _find_csv_path() -> str:
@@ -100,39 +105,147 @@ def get_risk_for_row(
     elif voice_clinical_summary:
         from my_crew.voice_agent import enhance_nurse_briefing
         nurse_briefing = enhance_nurse_briefing(nurse_briefing, voice_clinical_summary)
+    # Derive risk_category from probability for certification matching
+    if prob >= 0.7:
+        risk_category = "Critical"
+    elif prob >= 0.5:
+        risk_category = "High"
+    elif prob >= BED_PROBABILITY_THRESHOLD:
+        risk_category = "Observation"
+    else:
+        risk_category = "Stable"
     return {
         "nurse_briefing": nurse_briefing,
         "needs_bed": needs_bed,
         "length_of_stay": int(length_of_stay_hours) if needs_bed else -1,
+        "risk_category": risk_category,
     }
+
+
+def _room_floor(room_id: str) -> int:
+    """Return 0-based floor index. Each floor has ROOMS_PER_FLOOR rooms (R1–R14 = floor 0, R15–R28 = floor 1, ...)."""
+    match = re.search(r"\d+", str(room_id))
+    if not match:
+        return 0
+    room_num = int(match.group())
+    return (room_num - 1) // ROOMS_PER_FLOOR
+
+
+def _rooms_on_floor(rooms: list[dict[str, Any]], floor: int) -> list[dict[str, Any]]:
+    """Return room dicts that belong to the given 0-based floor."""
+    return [r for r in rooms if _room_floor(r.get("id", "")) == floor]
 
 
 def assign_room(
     rooms: list[dict[str, Any]],
     length_of_stay_hours: float,
+    assignment_index: int = 0,
 ) -> tuple[str, float, float] | None:
     """
-    Find an available room (smallest next_available time), book it for length_of_stay_hours.
+    Assign a room for length_of_stay_hours. Alternates between the first ASSIGNMENT_FLOORS floors (0, 1) by assignment_index,
+    and picks a random room on the chosen floor among those with the earliest next_available time.
     Room format: { "id": str, "start": float, "stop": float }. -1, -1 = available from 0.
     Updates the chosen room in place. Returns (room_id, start, stop) or None if no room.
     """
     if length_of_stay_hours <= 0:
         return None
-    best_room = None
+    num_floors = min(ASSIGNMENT_FLOORS, max(1, (len(rooms) + ROOMS_PER_FLOOR - 1) // ROOMS_PER_FLOOR))
+    floor = assignment_index % num_floors
+    floor_rooms = _rooms_on_floor(rooms, floor)
+    if not floor_rooms:
+        # Fallback: use all rooms (e.g. room IDs don't match R1, R2, ...)
+        floor_rooms = rooms
     best_next = float("inf")
-    for r in rooms:
+    for r in floor_rooms:
         stop = r.get("stop", -1)
         next_avail = 0.0 if (stop is None or stop == -1) else float(stop)
         if next_avail < best_next:
             best_next = next_avail
-            best_room = r
-    if best_room is None:
+    candidates = []
+    for r in floor_rooms:
+        stop = r.get("stop", -1)
+        next_avail = 0.0 if (stop is None or stop == -1) else float(stop)
+        if next_avail == best_next:
+            candidates.append(r)
+    if not candidates:
         return None
+    best_room = random.choice(candidates)
     start = best_next
     stop = start + length_of_stay_hours
     best_room["start"] = start
     best_room["stop"] = stop
     return (best_room["id"], start, stop)
+
+
+def _load_nurse_feedback_adjustments() -> dict[str, int]:
+    """Load nurse feedback from project root data/nurse_feedback.json and return per-nurse load delta (last 7 days)."""
+    # Project root: csv_pipeline is in my_crew/src/my_crew/ -> parent.parent = my_crew, parent.parent.parent = project root
+    for base in [Path(__file__).resolve().parent.parent.parent, Path.cwd(), Path(__file__).resolve().parent.parent]:
+        feedback_path = base / "data" / "nurse_feedback.json"
+        if feedback_path.exists():
+            try:
+                with open(feedback_path, encoding="utf-8") as f:
+                    data = json.load(f)
+                entries = data if isinstance(data, list) else data.get("entries", [])
+            except Exception as e:
+                logger.warning("Could not load nurse_feedback.json: %s", e)
+                return {}
+            from datetime import datetime, timedelta
+            cutoff = (datetime.utcnow() - timedelta(days=7)).strftime("%Y-%m-%d")
+            out: dict[str, int] = {}
+            for e in entries:
+                if not isinstance(e, dict):
+                    continue
+                shift_date = e.get("shiftDate") or e.get("shift_date") or ""
+                if shift_date < cutoff:
+                    continue
+                nurse_id = e.get("nurseId") or e.get("nurse_id") or ""
+                if not nurse_id:
+                    continue
+                delta = 0
+                if e.get("overwhelmed"):
+                    delta += 1
+                missed = e.get("missedVisits") or e.get("missed_visits")
+                if isinstance(missed, (int, float)):
+                    delta += min(int(missed), 3)
+                if delta > 0:
+                    out[nurse_id] = out.get(nurse_id, 0) + delta
+            return out
+    return {}
+
+
+def _apply_feedback_load_to_roster(roster: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add feedback-based load delta to each nurse so scheduler assigns them fewer visits next run."""
+    adjustments = _load_nurse_feedback_adjustments()
+    if not adjustments:
+        return roster
+    result = []
+    for r in roster:
+        r = copy.copy(r)
+        name = r.get("name") or r.get("id") or ""
+        load = int(r.get("load") or r.get("current_load") or 0)
+        r["load"] = load + adjustments.get(name, 0)
+        result.append(r)
+    return result
+
+
+# Risk category → preferred certifications (match nurse qualifications to patient need)
+ROOM_RISK_REQUIRED_CERTS: dict[str, list[str]] = {
+    "Critical": ["ICU-certified", "ACLS"],
+    "High": ["ICU-certified"],
+    "Observation": ["ICU-certified", "ER-specialist"],
+    "Stable": ["ER-specialist", "General"],
+    "Low": ["General"],
+}
+
+
+def _nurse_cert_match(roster_entry: dict[str, Any], required_certs: list[str]) -> bool:
+    """True if nurse has at least one of the required certifications."""
+    if not required_certs:
+        return True
+    raw = roster_entry.get("certifications") or roster_entry.get("certs") or []
+    certs = raw if isinstance(raw, list) else [raw]
+    return any(c in certs for c in required_certs)
 
 
 def schedule_nurses_next_12h(
@@ -141,82 +254,72 @@ def schedule_nurses_next_12h(
     window_hours: float = NURSE_WINDOW_HOURS,
     nurses_per_room: int = NURSES_PER_ROOM,
     slot_durations_hours: tuple[float, ...] = NURSE_SLOT_DURATIONS_HOURS,
+    room_required_certs: dict[str, list[str]] | None = None,
 ) -> list[dict[str, Any]]:
     """
     For the next 12 hours only: assign 4 DIFFERENT nurses to each occupied room.
-    Each nurse gets one slot of 15, 20, or 30 minutes (we use 30 min = 0.5h for each).
-    Occupied room = room with start >= 0 and stop > 0.
-    roster: list of { "name": str, "load": int }.
+    roster: list of { "name": str, "load": int, optional "certifications": list[str] }.
+    If room_required_certs is provided (room_id -> list of certs), nurses with matching
+    certifications are preferred for that room (patient who needs it most gets best-qualified nurse).
     Returns list of nurse objects: { "id": nurse_name, "room": room_id, "start": float, "stop": float }.
-    Distributes all available nurses across rooms, ensuring NO nurse is double-booked at the same time.
     """
     occupied = [r for r in rooms if r.get("stop") is not None and r.get("stop", -1) > 0]
     if not occupied or not roster:
         return []
-    
-    # Spread 4 slots over the window (e.g. 0, 3, 6, 9 hours); each slot 15, 20, or 30 min
+    room_required_certs = room_required_certs or {}
     step = window_hours / nurses_per_room
-    
-    # Sort roster by load (ascending) so we balance
+
+    # Base sort by load (ascending)
     roster_sorted = sorted(roster, key=lambda x: (x.get("load", 0), x.get("name", "")))
-    nurse_names = [r.get("name", f"Nurse_{i+1}") for i, r in enumerate(roster_sorted)]
-    
-    # Ensure we have enough nurse names (should have 30 from roster)
-    if len(nurse_names) < nurses_per_room:
-        nurse_names = nurse_names + [f"Nurse_{i+1}" for i in range(len(nurse_names), nurses_per_room)]
-    
+    all_nurse_names = [r.get("name", f"Nurse_{i+1}") for i, r in enumerate(roster_sorted)]
+    if len(all_nurse_names) < nurses_per_room:
+        all_nurse_names = all_nurse_names + [f"Nurse_{i+1}" for i in range(len(all_nurse_names), nurses_per_room)]
+
     result: list[dict[str, Any]] = []
-    
-    # Track nurse schedules to prevent double-booking
-    # nurse_schedule[nurse_name] = [(start, stop), (start, stop), ...]
-    nurse_schedule: dict[str, list[tuple[float, float]]] = {name: [] for name in nurse_names}
-    
+    nurse_schedule: dict[str, list[tuple[float, float]]] = {name: [] for name in all_nurse_names}
+
     def is_nurse_available(nurse_name: str, slot_start: float, slot_stop: float) -> bool:
-        """Check if nurse is available during the given time slot (no overlap with existing assignments)."""
         for assigned_start, assigned_stop in nurse_schedule[nurse_name]:
-            # Check for any overlap: new slot overlaps if it starts before existing ends AND ends after existing starts
             if slot_start < assigned_stop and slot_stop > assigned_start:
                 return False
         return True
-    
-    def find_available_nurse(slot_start: float, slot_stop: float, start_idx: int = 0) -> str | None:
-        """Find the first available nurse for this time slot, starting from start_idx."""
-        for i in range(len(nurse_names)):
-            nurse_idx = (start_idx + i) % len(nurse_names)
-            nurse_name = nurse_names[nurse_idx]
-            if is_nurse_available(nurse_name, slot_start, slot_stop):
+
+    def nurse_order_for_room(room_id: str) -> list[str]:
+        """Order nurses by certification match for this room, then load (so patient gets best-qualified nurse)."""
+        required = room_required_certs.get(room_id, []) or []
+        if not required:
+            return all_nurse_names
+        # Prefer nurses who have at least one required cert, then by load
+        def key(r: dict[str, Any]) -> tuple[int, int]:
+            match = 0 if _nurse_cert_match(r, required) else 1
+            load = int(r.get("load") or r.get("current_load") or 0)
+            return (match, load)
+        ordered = sorted(roster_sorted, key=key)
+        return [r.get("name", f"Nurse_{i+1}") for i, r in enumerate(ordered)]
+
+    def find_available_nurse(slot_start: float, slot_stop: float, nurse_order: list[str], start_idx: int) -> str | None:
+        for i in range(len(nurse_order)):
+            nurse_name = nurse_order[(start_idx + i) % len(nurse_order)]
+            if nurse_name in nurse_schedule and is_nurse_available(nurse_name, slot_start, slot_stop):
                 return nurse_name
         return None
-    
-    nurse_counter = 0  # Start index for round-robin selection
-    
+
+    nurse_counter = 0
     for room in occupied:
         room_id = room.get("id", "")
+        order_for_room = nurse_order_for_room(room_id)
         for k in range(nurses_per_room):
             slot_start = k * step
             duration = slot_durations_hours[k % len(slot_durations_hours)]
             slot_stop = slot_start + duration
-            
-            # Find an available nurse for this time slot
-            nurse_name = find_available_nurse(slot_start, slot_stop, nurse_counter)
-            
+            nurse_name = find_available_nurse(slot_start, slot_stop, order_for_room, nurse_counter)
             if nurse_name is None:
-                # Should not happen with 30 nurses and reasonable scheduling, but log it
                 print(f"Warning: Could not find available nurse for room {room_id} at time {slot_start}-{slot_stop}")
                 continue
-            
-            # Assign this nurse and update their schedule
             nurse_schedule[nurse_name].append((slot_start, slot_stop))
-            result.append({
-                "id": nurse_name,
-                "room": room_id,
-                "start": round(slot_start, 2),
-                "stop": round(slot_stop, 2),
-            })
-            
-            # Increment counter for next assignment to distribute load
+            result.append({"id": nurse_name, "room": room_id, "start": round(slot_start, 2), "stop": round(slot_stop, 2)})
             nurse_counter += 1
-    
+
     return result
 
 
@@ -315,6 +418,7 @@ def run_csv_pipeline(
         {"id": pid, "room": -1, "start": -1, "stop": -1} for pid in patient_ids
     ]
     risk_per_patient: list[dict[str, Any]] = []
+    assignment_index = 0  # Count of patients assigned so far (used to alternate floors)
 
     inference = ModelInference(demo_patients_path=path)
     
@@ -389,7 +493,7 @@ def run_csv_pipeline(
             time.sleep(0.25)
             continue
             
-        assigned = assign_room(hospital_space, los)
+        assigned = assign_room(hospital_space, los, assignment_index)
         if assigned is None:
             emit_event("patient_complete", {
                 "patient_id": patient_id,
@@ -399,6 +503,7 @@ def run_csv_pipeline(
             time.sleep(0.25)
             continue
             
+        assignment_index += 1
         room_id, start, stop = assigned
         patients[i]["room"] = room_id
         patients[i]["start"] = start
@@ -415,13 +520,42 @@ def run_csv_pipeline(
         })
         time.sleep(0.25)  # 0.25 second delay after patient analysis
 
-    emit_event("nurse_scheduling_start", {
-        "message": "Starting nurse scheduling for occupied rooms",
-        "total_nurses": 30
-    })
-    
-    nurse_roster = roster or [{"name": f"Nurse_{i+1}", "load": 0} for i in range(30)]
-    nurse_assignments = schedule_nurses_next_12h(hospital_space, nurse_roster)
+    # Build room -> required certifications from assigned patients (match nurse qualifications to patient need)
+    room_required_certs: dict[str, list[str]] = {}
+    for i, p in enumerate(patients):
+        room_id = p.get("room")
+        if room_id is not None and room_id != -1 and i < len(risk_per_patient):
+            rcat = risk_per_patient[i].get("risk_category", "Stable")
+            room_required_certs[str(room_id)] = ROOM_RISK_REQUIRED_CERTS.get(rcat, ["General"])
+
+    # Optional: load roster with certifications from data/nurse_roster.json
+    if roster is None:
+        roster_path = Path(__file__).resolve().parent.parent / "data" / "nurse_roster.json"
+        if roster_path.exists():
+            try:
+                with open(roster_path, encoding="utf-8") as f:
+                    loaded = json.load(f)
+                roster = loaded.get("nurses", loaded) if isinstance(loaded, dict) else loaded
+            except Exception as e:
+                logger.warning("Could not load nurse_roster.json: %s; using default roster", e)
+                roster = None
+    if roster is None:
+        # Default roster with certifications: first 10 ICU, next 10 ER-specialist, rest General
+        roster = []
+        for i in range(30):
+            name = f"Nurse_{i+1}"
+            if i < 10:
+                certs = ["ICU-certified", "ACLS"]
+            elif i < 20:
+                certs = ["ER-specialist", "General"]
+            else:
+                certs = ["General"]
+            roster.append({"name": name, "load": 0, "certifications": certs})
+    # Apply nurse feedback: increase load for nurses who reported overwhelmed/missed visits (so they get fewer assignments next run)
+    nurse_roster = _apply_feedback_load_to_roster(list(roster))
+    nurse_assignments = schedule_nurses_next_12h(
+        hospital_space, nurse_roster, room_required_certs=room_required_certs
+    )
     
     emit_event("nurse_scheduling_complete", {
         "message": f"Nurse scheduling complete: {len(nurse_assignments)} assignments",

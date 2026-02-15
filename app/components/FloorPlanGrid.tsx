@@ -99,10 +99,10 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
     const occupiedRoomIds = getRoomIdsOccupiedAtTime(DEMO_TIME);
 
     return (
-        <div className="flex gap-6 h-full overflow-hidden">
+        <div className="flex gap-6 h-full w-full min-w-0 overflow-hidden">
             {/* 3D Hospital Map */}
             <div
-                className="bg-white rounded-lg shadow-lg p-4 flex flex-col items-stretch transition-all duration-700 ease-in-out"
+                className="bg-white rounded-lg shadow-lg p-4 flex flex-col items-stretch transition-all duration-700 ease-in-out min-w-0"
                 style={{
                     flex: selectedRoom ? '0 0 60%' : '1 1 100%',
                 }}
@@ -141,11 +141,11 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
                 </div>
             </div>
 
-            {/* Room Schedule Panel */}
+            {/* Room Schedule Panel - min-width ensures panel gets space immediately when room is selected (fixes panel not showing until floor switch) */}
             {selectedRoom && (
                 <div
                     key={selectedRoom}
-                    className="flex-1 min-w-0 max-w-xl bg-white rounded-lg shadow-xl p-6 flex flex-col"
+                    className="flex-1 min-w-[320px] max-w-xl bg-white rounded-lg shadow-xl p-6 flex flex-col flex-shrink-0"
                     style={{
                         animation: 'slideInFade 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
                         opacity: 0,
