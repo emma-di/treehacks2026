@@ -81,11 +81,11 @@ export function Header() {
                         </div>
                         <div>
                             {isHomePage ? (
-                                <h1 className="text-xl font-semibold text-white">Multi-Agent Allocator</h1>
+                                <h1 className="text-xl font-semibold text-white">Atria</h1>
                             ) : (
                                 <>
-                                    <h1 className="text-xl font-semibold text-white">Hospital Name</h1>
-                                    <p className="text-xs text-white/90">Multi-Agent Allocator</p>
+                                    <h1 className="text-xl font-semibold text-white">Golden State Hospital</h1>
+                                    <p className="text-xs text-white/90">Atria</p>
                                 </>
                             )}
                         </div>
