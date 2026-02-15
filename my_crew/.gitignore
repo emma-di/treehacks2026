@@ -1,3 +1,11 @@
 .env
 __pycache__/
 .DS_Store
+output/
+saved_models/
+*.pkl
+# Voice agent input (avoid committing large recordings)
+data/audio/*.mp3
+data/audio/*.m4a
+data/audio/*.wav
+data/audio/*.webm

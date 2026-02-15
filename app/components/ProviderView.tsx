@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Search, ChevronDown, ChevronUp, X, Mic, Square, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { getNurseAssignments, formatTime, getPatientInRoom, getShortPatientId, getUniqueNurseIds } from '../lib/scheduleData';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 // Mock data for doctors (not in the crew data)
 const doctors = [
@@ -96,12 +97,80 @@ interface ProviderViewProps {
     initialProviderId?: string | null;
 }
 
+type SummaryEntry = { summary: string; transcription?: string | null; updatedAt: string; providerId?: string | null };
+type SummaryModal = { patientId: string; summaries: SummaryEntry[]; currentIndex: number } | null;
+
 export function ProviderView({ initialProviderId }: ProviderViewProps) {
     const searchParams = useSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
     const [doctorsExpanded, setDoctorsExpanded] = useState(true);
     const [nursesExpanded, setNursesExpanded] = useState(true);
     const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
+    const [recordingPatientId, setRecordingPatientId] = useState<string | null>(null);
+    const [summaryModal, setSummaryModal] = useState<SummaryModal>(null);
+    const [recordingError, setRecordingError] = useState<string | null>(null);
+    const [uploadingPatientId, setUploadingPatientId] = useState<string | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const chunksRef = useRef<Blob[]>([]);
+    const recordingProviderIdRef = useRef<string | null>(null);
+
+    const showSummary = useCallback(async (patientId: string) => {
+        setRecordingError(null);
+        try {
+            const res = await fetch(`/api/voice-summary?patientId=${encodeURIComponent(patientId)}`);
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to load summary');
+            const list = Array.isArray(data.summaries) ? data.summaries : [];
+            setSummaryModal({ patientId, summaries: list, currentIndex: 0 });
+        } catch (e) {
+            setSummaryModal({ patientId, summaries: [], currentIndex: 0 });
+        }
+    }, []);
+
+    const startRecording = useCallback(async (patientId: string) => {
+        setRecordingError(null);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            chunksRef.current = [];
+            const recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = (e) => { if (e.data.size) chunksRef.current.push(e.data); };
+            recorder.onstop = async () => {
+                stream.getTracks().forEach((t) => t.stop());
+                const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                setUploadingPatientId(patientId);
+                const providerId = recordingProviderIdRef.current ?? selectedProvider?.id ?? null;
+                try {
+                    const form = new FormData();
+                    form.append('audio', blob);
+                    form.append('patientId', patientId);
+                    if (providerId) form.append('providerId', providerId);
+                    const res = await fetch('/api/voice-summary', { method: 'POST', body: form });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || 'Upload failed');
+                    const list = Array.isArray(data.summaries) ? data.summaries : [{ summary: data.summary ?? '', transcription: data.transcription ?? null, updatedAt: data.updatedAt ?? '', providerId: data.providerId ?? null }];
+                    setSummaryModal({ patientId, summaries: list, currentIndex: 0 });
+                } catch (err) {
+                    setRecordingError(err instanceof Error ? err.message : 'Upload failed');
+                } finally {
+                    setUploadingPatientId(null);
+                }
+            };
+            mediaRecorderRef.current = recorder;
+            recordingProviderIdRef.current = selectedProvider?.id ?? null;
+            recorder.start();
+            setRecordingPatientId(patientId);
+        } catch (err) {
+            setRecordingError(err instanceof Error ? err.message : 'Microphone access denied');
+        }
+    }, [selectedProvider?.id]);
+
+    const stopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && recordingPatientId) {
+            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current = null;
+            setRecordingPatientId(null);
+        }
+    }, [recordingPatientId]);
 
     // Handle initial provider selection from URL
     useEffect(() => {
@@ -379,12 +448,46 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
                                             </td>
                                             <td className="align-top py-4">
                                                 <div className="bg-blue-50 border-l-4 border-blue-500 rounded px-3 py-3">
-                                                    <Link
-                                                        href={`/patient?id=${appointment.patient}`}
-                                                        className="font-semibold text-blue-700 hover:underline mb-1 inline-block"
-                                                    >
-                                                        {appointment.patient}
-                                                    </Link>
+                                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                        <Link
+                                                            href={`/patient?id=${appointment.patient}`}
+                                                            className="font-semibold text-blue-700 hover:underline"
+                                                        >
+                                                            {appointment.patient}
+                                                        </Link>
+                                                        {selectedProvider?.type === 'nurse' && appointment.patient !== 'N/A' && (
+                                                            <>
+                                                                {recordingPatientId === appointment.patient ? (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={stopRecording}
+                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-800 hover:bg-red-200"
+                                                                    >
+                                                                        <Square className="size-3" /> Stop recording
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => startRecording(appointment.patient)}
+                                                                        disabled={!!uploadingPatientId}
+                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-800 hover:bg-green-200 disabled:opacity-50"
+                                                                    >
+                                                                        <Mic className="size-3" /> {uploadingPatientId === appointment.patient ? 'Uploading…' : 'Start recording'}
+                                                                    </button>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => showSummary(appointment.patient)}
+                                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                                                >
+                                                                    <FileText className="size-3" /> Show summary
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    {recordingError && (recordingPatientId === appointment.patient || uploadingPatientId === appointment.patient) && (
+                                                        <div className="text-xs text-red-600 mb-1">{recordingError}</div>
+                                                    )}
                                                     <div className="text-xs text-blue-600 mb-1">{appointment.notes}</div>
                                                     <div className="text-xs text-blue-500 font-medium">Duration: {appointment.duration}</div>
                                                     {/* Embedded Todos */}
@@ -409,6 +512,64 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
                     </div>
                 </div>
             )}
+            <Dialog open={!!summaryModal} onOpenChange={(open) => !open && setSummaryModal(null)}>
+                <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Visit summaries — {summaryModal?.patientId ?? ''}</DialogTitle>
+                    </DialogHeader>
+                    {summaryModal && (
+                        <div className="space-y-3 text-sm">
+                            {summaryModal.summaries.length === 0 ? (
+                                <p className="text-gray-500">No conversation summaries yet.</p>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setSummaryModal((m) => m && m.currentIndex > 0 ? { ...m, currentIndex: m.currentIndex - 1 } : m)}
+                                            disabled={summaryModal.currentIndex <= 0}
+                                            className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none"
+                                            aria-label="Earlier conversation"
+                                        >
+                                            <ChevronLeft className="size-5 text-gray-600" />
+                                        </button>
+                                        <span className="text-xs font-medium text-gray-600">
+                                            {summaryModal.currentIndex === 0 ? 'Most recent' : 'Earlier'} — {summaryModal.currentIndex + 1} of {summaryModal.summaries.length}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSummaryModal((m) => m && m.currentIndex < m.summaries.length - 1 ? { ...m, currentIndex: m.currentIndex + 1 } : m)}
+                                            disabled={summaryModal.currentIndex >= summaryModal.summaries.length - 1}
+                                            className="p-1.5 rounded hover:bg-gray-100 disabled:opacity-40 disabled:pointer-events-none"
+                                            aria-label="Later conversation"
+                                        >
+                                            <ChevronRight className="size-5 text-gray-600" />
+                                        </button>
+                                    </div>
+                                    {(() => {
+                                        const entry = summaryModal.summaries[summaryModal.currentIndex];
+                                        if (!entry) return null;
+                                        const providerLabel = entry.providerId ? entry.providerId.replace('_', ' ') : 'Unknown';
+                                        return (
+                                            <div className="space-y-3">
+                                                <p className="text-xs font-medium text-gray-500">Conversation with {providerLabel}</p>
+                                                <p className="text-gray-700 whitespace-pre-wrap">{entry.summary}</p>
+                                                {entry.transcription && (
+                                                    <details className="pt-2 border-t border-gray-200">
+                                                        <summary className="cursor-pointer text-gray-600 font-medium">Transcription</summary>
+                                                        <p className="mt-2 text-gray-600 text-xs whitespace-pre-wrap">{entry.transcription}</p>
+                                                    </details>
+                                                )}
+                                                <p className="text-xs text-gray-500">Recorded: {new Date(entry.updatedAt).toLocaleString()}</p>
+                                            </div>
+                                        );
+                                    })()}
+                                </>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
