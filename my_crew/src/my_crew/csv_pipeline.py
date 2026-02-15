@@ -51,11 +51,15 @@ def get_risk_for_row(
     csv_path: str | None = None,
     inference: ModelInference | None = None,
     df: pd.DataFrame | None = None,
+    voice_audio_path: str | Path | None = None,
+    voice_clinical_summary: str | None = None,
 ) -> dict[str, Any]:
     """
     Run model 1 (bed need) on the patient row; if probability > 35%, run model 2 (length of stay).
     Returns: nurse_briefing (str), needs_bed (bool), length_of_stay (float hours, only when needs_bed).
     Uses the same method as test_demo_patients.py: row[task1_features].to_dict() / row[task2_features].to_dict().
+    Optional: voice_audio_path = path to doctor–patient conversation audio; it will be transcribed and
+    clinically summarized to enhance nurse_briefing. Or pass voice_clinical_summary directly.
     """
     path = csv_path or _find_csv_path()
     inf = inference or ModelInference(demo_patients_path=path)
@@ -79,12 +83,23 @@ def get_risk_for_row(
             "Patient row %s: model 2 -> length_of_stay_hours=%.0f",
             row_index, length_of_stay_hours,
         )
-    # Nurse briefing: short summary (no LLM in pipeline; can be replaced by risk agent later)
+    # Nurse briefing: base summary from risk models
     nurse_briefing = (
         f"Patient row {row_index}: bed need probability={prob:.2%}; "
         f"needs_bed={needs_bed}; "
         + (f"length_of_stay={length_of_stay_hours:.0f}h." if needs_bed else "no bed required.")
     )
+    # Optionally enhance with voice-derived clinical context (doctor–patient conversation)
+    if voice_audio_path is not None:
+        try:
+            from my_crew.voice_agent import get_clinical_summary_from_voice, enhance_nurse_briefing
+            summary = get_clinical_summary_from_voice(voice_audio_path)
+            nurse_briefing = enhance_nurse_briefing(nurse_briefing, summary)
+        except Exception as e:
+            logger.warning("Voice agent failed for row %s: %s; using base briefing only", row_index, e)
+    elif voice_clinical_summary:
+        from my_crew.voice_agent import enhance_nurse_briefing
+        nurse_briefing = enhance_nurse_briefing(nurse_briefing, voice_clinical_summary)
     return {
         "nurse_briefing": nurse_briefing,
         "needs_bed": needs_bed,

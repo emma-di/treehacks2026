@@ -454,6 +454,31 @@ def test():
     except Exception as e:
         raise Exception(f"An error occurred while testing the crew: {e}")
 
+def run_voice_agent():
+    """
+    Voice agent CLI: transcribe doctor–patient audio and extract clinically relevant info for nurses.
+    Usage: uv run run_voice_agent <path/to/audio.mp3>
+    Prints transcription and clinical summary; use the summary to enhance nurse briefing (or pass
+    voice_audio_path to get_risk_for_row).
+    """
+    if len(sys.argv) < 2:
+        print("Usage: run_voice_agent <path/to/audio.mp3>")
+        sys.exit(1)
+    audio_path = sys.argv[1]
+    from my_crew.voice_agent import transcribe_audio, extract_clinical_info
+    try:
+        print("Transcribing...")
+        transcription = transcribe_audio(audio_path)
+        print("\n--- Transcription ---\n")
+        print(transcription or "(empty)")
+        print("\n--- Clinical summary for nurse briefing ---\n")
+        summary = extract_clinical_info(transcription)
+        print(summary)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def run_with_trigger():
     """
     Run the crew with trigger payload.
