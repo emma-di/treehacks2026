@@ -8,9 +8,9 @@ export function LayoutWithHospitalLoading({ children }: { children: React.ReactN
   return (
     <HospitalLoadingProvider>
       <HospitalLoadingOverlay />
-      <div className="size-full flex flex-col h-screen">
+      <div className="relative z-[1] size-full flex flex-col h-screen">
         <Header />
-        <main className="flex-1 overflow-auto bg-gray-50">{children}</main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </HospitalLoadingProvider>
   );

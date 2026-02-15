@@ -1,7 +1,7 @@
 "use client";
 
-import { MeshGradient } from "@paper-design/shaders-react";
 import { AtriaLogo } from "./AtriaLogo";
+import { NavyShaderBackground } from "./ui/navy-shader-background";
 import { useHospitalLoading } from "../context/HospitalLoadingContext";
 
 export function HospitalLoadingOverlay() {
@@ -10,19 +10,16 @@ export function HospitalLoadingOverlay() {
   if (!showHospitalLoading) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#020308]">
-      <div className="absolute inset-0 overflow-hidden">
-        <MeshGradient
-          width={1280}
-          height={720}
-          colors={["#020308", "#050518", "#0a0825", "#030510"]}
-          distortion={0.8}
-          swirl={0.1}
-          grainMixer={0}
-          grainOverlay={0}
-          speed={1}
-        />
-      </div>
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+      style={{
+        width: "100vw",
+        minWidth: "100vw",
+        height: "100dvh",
+        minHeight: "100dvh",
+      }}
+    >
+      <NavyShaderBackground position="absolute" />
       <div className="relative z-10 flex flex-col items-center justify-center">
         <div className="relative flex items-center justify-center">
           {/* Outer ring: dashed so rotation is visible */}

@@ -19,8 +19,8 @@ const BAY_AREA_LNG = -122.4;
 const CLICK_TOLERANCE_DEG = 5;
 
 // Match globe.tsx aspect (1.2) so the sphere doesn't squish
-const GLOBE_WIDTH = 560;
-const GLOBE_HEIGHT = Math.round(560 / 1.2); // 467
+const GLOBE_WIDTH = 720;
+const GLOBE_HEIGHT = Math.round(720 / 1.2); // 467
 
 const BAY_AREA_HUB = { lat: 37.8, lng: -122.4 };
 const GLOBE_POINTS = [
@@ -204,7 +204,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-full flex flex-col">
-      <NavyShaderBackground position="absolute" />
+      <NavyShaderBackground position="fixed" />
       <div className="relative z-10 flex flex-1 p-8 items-center justify-center">
         {/* Globe — fixed size, aspect 1.2 to match Canvas so it never squishes */}
         <div className="flex flex-col items-center flex-shrink-0">

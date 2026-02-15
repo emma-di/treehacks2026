@@ -1,5 +1,6 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { MeshGradient } from "@paper-design/shaders-react";
 
 export function NavyShaderBackground({
@@ -8,13 +9,18 @@ export function NavyShaderBackground({
   /** "absolute" = fill only parent (e.g. home page); "fixed" = full viewport */
   position?: "fixed" | "absolute";
 }) {
-  return (
+  const content = (
     <div
-      className={`${position === "absolute" ? "absolute" : "fixed"} inset-0 z-0 min-h-full w-full overflow-hidden bg-[#020308]`}
+      className={`${position === "absolute" ? "absolute" : "fixed"} inset-0 z-0 overflow-hidden bg-[#020308]`}
+      style={{
+        width: "100vw",
+        minWidth: "100vw",
+        height: "100dvh",
+        minHeight: "100dvh",
+      }}
     >
       <MeshGradient
-        width={1280}
-        height={720}
+        style={{ width: "100%", height: "100%", display: "block" }}
         colors={["#020308", "#050518", "#0a0825", "#030510"]}
         distortion={0.8}
         swirl={0.1}
@@ -46,4 +52,9 @@ export function NavyShaderBackground({
       />
     </div>
   );
+
+  if (position === "fixed" && typeof document !== "undefined") {
+    return createPortal(content, document.body);
+  }
+  return content;
 }
