@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     const event: Event = await request.json();
     addEvent(event);
 
-    // When pipeline completes, send schedule email to Nurse 1
+    // When pipeline completes, send schedule email to Nurse 1 (emma.tingyu@gmail.com)
     if (event.type === 'pipeline_complete') {
       const origin = new URL(request.url).origin || 'http://localhost:3000';
       const url = `${origin}/api/send-schedule-email`;

@@ -1,7 +1,8 @@
 'use client';
 
-import { Building2, Play, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Play, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { AtriaLogo } from './AtriaLogo';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
@@ -76,16 +77,14 @@ export function Header() {
                 <div className="flex items-center justify-between mb-3">
                     {/* Logo and brand / hospital name */}
                     <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-                        <div className="bg-white/30 p-2 rounded-lg backdrop-blur-sm">
-                            <Building2 className="size-6 text-white" />
-                        </div>
+                        <AtriaLogo className="text-white" size={40} />
                         <div>
                             {isHomePage ? (
-                                <h1 className="text-xl font-semibold text-white">Multi-Agent Allocator</h1>
+                                <h1 className="text-xl font-semibold text-white">Atria</h1>
                             ) : (
                                 <>
                                     <h1 className="text-xl font-semibold text-white">Hospital Name</h1>
-                                    <p className="text-xs text-white/90">Multi-Agent Allocator</p>
+                                    <p className="text-xs text-white/90">Atria</p>
                                 </>
                             )}
                         </div>

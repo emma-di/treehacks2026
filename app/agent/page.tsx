@@ -178,7 +178,7 @@ export default function Agent() {
                     <div className="flex items-center gap-3">
                         <Activity className="size-8 text-blue-600" />
                         <h2 className="text-3xl font-semibold text-gray-900">
-                            Multi-Agent System Monitor
+                            Atria System Monitor
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">

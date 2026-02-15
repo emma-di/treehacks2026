@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const systemMessage = {
       role: 'system',
-      content: `You are an AI assistant helping monitor and explain a hospital multi-agent scheduling system. 
+      content: `You are an AI assistant helping monitor and explain a Atria hospital scheduling system. 
 The system schedules patients to rooms and assigns nurses to check on patients.
 
 You have access to the real-time event log from the scheduling pipeline. Use this context to answer questions about:

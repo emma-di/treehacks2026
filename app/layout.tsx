@@ -3,8 +3,8 @@ import "./globals.css";
 import { Header } from "./components/Header";
 
 export const metadata: Metadata = {
-  title: "Hospital Multi-Agent Allocator",
-  description: "Hospital Multi-Agent Patient/Room Allocator & Scheduler",
+  title: "Atria",
+  description: "Atria Hospital Patient/Room Allocator & Scheduler",
 };
 
 export default function RootLayout({

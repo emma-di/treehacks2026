@@ -66,6 +66,7 @@ function createRoom(
   z: number,
   doorSide: DoorSide,
   selected: boolean,
+  occupied: boolean,
   floorHitMap: Map<THREE.Mesh, string>
 ) {
   const w = ROOM_W;
@@ -180,7 +181,21 @@ function createRoom(
   highlight.position.set(0, WALL_HEIGHT / 2, 0);
   highlight.visible = selected;
   group.add(highlight);
-  (group as THREE.Group & { highlightMesh?: THREE.Mesh }).highlightMesh = highlight;
+  (group as THREE.Group & { highlightMesh?: THREE.Mesh; occupiedHighlightMesh?: THREE.Mesh }).highlightMesh = highlight;
+
+  // Light orange highlight when occupied (and not selected)
+  const occupiedHighlightMat = new THREE.MeshBasicMaterial({
+    color: 0xfb923c,
+    transparent: true,
+    opacity: 0.3,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const occupiedHighlight = new THREE.Mesh(highlightGeom.clone(), occupiedHighlightMat);
+  occupiedHighlight.position.set(0, WALL_HEIGHT / 2, 0);
+  occupiedHighlight.visible = occupied && !selected;
+  group.add(occupiedHighlight);
+  (group as THREE.Group & { highlightMesh?: THREE.Mesh; occupiedHighlightMesh?: THREE.Mesh }).occupiedHighlightMesh = occupiedHighlight;
 
   const mat = new THREE.MeshStandardMaterial({ color: WHITE });
   // Bed: perpendicular to side walls (the walls without the door), against one side wall.
@@ -405,18 +420,22 @@ function addCenterAndHallway(scene: THREE.Scene) {
   scene.add(monStand3);
 }
 
+const DEMO_CURRENT_TIME = 3.5; // 03:30 for this demo
+
 export function HospitalMap3D({
   rows,
   cols,
   selectedFloor,
   selectedRoom,
   onRoomSelect,
+  occupiedRoomIds = [],
 }: {
   rows: number;
   cols: number;
   selectedFloor: number;
   selectedRoom: string | null;
   onRoomSelect: (id: string) => void;
+  occupiedRoomIds?: string[];
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -559,19 +578,21 @@ export function HospitalMap3D({
       roomsGroupRef.current = null;
       floorHitMapRef.current = new Map();
     };
-  }, [rows, cols, selectedFloor]);
+  }, [rows, cols, selectedFloor, selectedRoom, occupiedRoomIds]);
 
-  // Update room selection highlight when selectedRoom changes (no full rebuild)
+  // Update room selection and occupancy highlights when selectedRoom or occupiedRoomIds change (no full rebuild)
   useEffect(() => {
     const roomsGroup = roomsGroupRef.current;
     if (!roomsGroup) return;
+    const occSet = new Set(occupiedRoomIds);
     roomsGroup.children.forEach((group) => {
-      const g = group as THREE.Group & { highlightMesh?: THREE.Mesh };
+      const g = group as THREE.Group & { highlightMesh?: THREE.Mesh; occupiedHighlightMesh?: THREE.Mesh };
       const floor = g.children[0] as THREE.Mesh;
       const roomId = (floor.userData as { roomId: string }).roomId;
       if (g.highlightMesh) g.highlightMesh.visible = selectedRoom === roomId;
+      if (g.occupiedHighlightMesh) g.occupiedHighlightMesh.visible = occSet.has(roomId) && selectedRoom !== roomId;
     });
-  }, [selectedRoom]);
+  }, [selectedRoom, occupiedRoomIds]);
 
   return (
     <div

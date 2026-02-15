@@ -70,7 +70,7 @@ export default function Home() {
         {detailsOpen && (
           <div
             key="details-panel"
-            className="flex-1 min-w-0 bg-white rounded-xl shadow-xl border border-slate-200/80 p-6 flex flex-col overflow-hidden"
+            className="flex-1 min-w-0 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200/60 p-7 flex flex-col overflow-hidden"
             style={{
               animation: 'slideInFade 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
               opacity: 0,
@@ -84,54 +84,54 @@ export default function Home() {
                 }
               `}
             </style>
-            <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-200">
-              <h2 className="text-lg font-semibold text-slate-800">How it works</h2>
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80">
+              <h2 className="text-xl font-semibold text-slate-800 tracking-tight">How it works</h2>
               <button
                 type="button"
                 onClick={() => setDetailsOpen(false)}
-                className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors text-slate-500"
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500 hover:text-slate-700"
                 aria-label="Close"
               >
                 <X className="size-5" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto text-sm text-slate-700 space-y-5 pr-2">
-              {/* Model boxes (like diagram) */}
+            <div className="flex-1 overflow-y-auto text-sm text-slate-700 space-y-6 pr-2">
+              {/* Local level models */}
               <section>
-                <h3 className="text-amber-700 font-semibold mb-2">Local level models</h3>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-blue-700 mb-3 pl-3 border-l-4 border-blue-400">Local level models</h3>
                 <div className="space-y-3">
-                  <div className="rounded-lg border-2 border-pink-200 bg-pink-50/80 p-3 shadow-sm">
-                    <div className="font-semibold text-pink-800">Inpatient Transition Model (ITM)</div>
-                    <ul className="text-slate-600 text-xs mt-1.5 space-y-0.5 list-none pl-0">
-                      <li>Trained on local EHR data</li>
-                      <li>Predicts odds of ED → inpatient admission</li>
+                  <div className="rounded-xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 to-slate-50/80 p-4 shadow-sm">
+                    <div className="font-semibold text-blue-900">Inpatient Transition Model (ITM)</div>
+                    <ul className="text-slate-600 text-xs mt-2 space-y-1 list-none pl-0">
+                      <li>· Trained on local EHR data</li>
+                      <li>· Predicts odds of ED → inpatient admission</li>
                     </ul>
                   </div>
-                  <div className="rounded-lg border-2 border-pink-200 bg-pink-50/80 p-3 shadow-sm">
-                    <div className="font-semibold text-pink-800">Time in Care Model (TIC)</div>
-                    <ul className="text-slate-600 text-xs mt-1.5 space-y-0.5 list-none pl-0">
-                      <li>Trained on local length-of-stay and flow data</li>
-                      <li>Predicts time in care given IP from ED</li>
+                  <div className="rounded-xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 to-slate-50/80 p-4 shadow-sm">
+                    <div className="font-semibold text-blue-900">Time in Care Model (TIC)</div>
+                    <ul className="text-slate-600 text-xs mt-2 space-y-1 list-none pl-0">
+                      <li>· Trained on local length-of-stay and flow data</li>
+                      <li>· Predicts time in care given IP from ED</li>
                     </ul>
                   </div>
                 </div>
               </section>
 
-              {/* Agents / process — triangles only on calls / allocates */}
+              {/* Agents / process */}
               <section>
-                <h3 className="text-amber-700 font-semibold mb-2">Agents / process</h3>
-                <ul className="space-y-1 text-sm list-none pl-0">
-                  <li className="text-slate-700">Gather patient data</li>
-                  <li className="text-slate-700">Resource agent (hospital context)</li>
-                  <li className="text-slate-700">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-3 pl-3 border-l-4 border-slate-400">Agents / process</h3>
+                <ul className="space-y-2 text-sm list-none pl-0">
+                  <li className="text-slate-700 py-0.5">Gather patient data</li>
+                  <li className="text-slate-700 py-0.5">Resource agent (hospital context)</li>
+                  <li className="text-slate-700 pt-0.5">
                     Orchestrator agent
-                    <ul className="mt-1 ml-4 space-y-0.5 list-none pl-0 border-l-2 border-amber-100 pl-2">
+                    <ul className="mt-2 ml-4 space-y-1 list-none pl-0 border-l-2 border-slate-200 pl-3">
                       <li className="flex items-start gap-2 text-slate-600 text-xs">
-                        <OutlineTriangle className="text-amber-500 text-[10px]" />
+                        <OutlineTriangle className="text-blue-500 text-[10px] flex-shrink-0 mt-0.5" />
                         Calls the risk agent, which uses the 2 models
                       </li>
                       <li className="flex items-start gap-2 text-slate-600 text-xs">
-                        <OutlineTriangle className="text-amber-500 text-[10px]" />
+                        <OutlineTriangle className="text-blue-500 text-[10px] flex-shrink-0 mt-0.5" />
                         Allocates / makes schedule
                       </li>
                     </ul>
@@ -139,18 +139,18 @@ export default function Home() {
                 </ul>
               </section>
 
-              {/* Global level box */}
+              {/* Global level */}
               <section>
-                <h3 className="text-amber-700 font-semibold mb-2">Global level: federated learning</h3>
-                <div className="rounded-lg border-2 border-amber-200 bg-amber-50/80 p-3 shadow-sm">
-                  <ul className="text-slate-700 text-xs space-y-1 list-none pl-0">
-                    <li>Federated learning: train global model</li>
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-3 pl-3 border-l-4 border-amber-400">Global level: federated learning</h3>
+                <div className="rounded-xl border border-amber-200/90 bg-gradient-to-br from-amber-50/90 to-yellow-50/50 p-4 shadow-sm">
+                  <ul className="text-slate-700 text-xs space-y-1.5 list-none pl-0">
+                    <li><span className="font-medium text-slate-800">Federated learning:</span> train global model</li>
                     <li>Hospitals without a local model can use the global model (e.g. underresourced areas)</li>
                   </ul>
                 </div>
               </section>
 
-              <p className="text-slate-500 italic text-xs pt-1">
+              <p className="text-slate-500 italic text-xs pt-2 pb-1">
                 The ties on the globe indicate when a site participates in training the global model.
               </p>
             </div>
