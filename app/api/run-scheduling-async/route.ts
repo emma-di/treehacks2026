@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { exec } from 'child_process';
 import path from 'path';
+import os from 'os';
 
 // Force Node.js runtime
 export const runtime = 'nodejs';
@@ -22,8 +23,9 @@ export async function POST(request: NextRequest) {
     const apiEndpoint = 'http://localhost:3000/api/agent-events';
     console.log('[API] Setting NEXT_API_ENDPOINT to:', apiEndpoint);
 
-    // Run async - don't wait for completion
-    const command = `cd "${crewPath}" && NEXT_API_ENDPOINT="${apiEndpoint}" uv run run_from_csv > /tmp/scheduling-output.log 2>&1 &`;
+    // Run async - don't wait for completion (Windows has no /tmp)
+    const logPath = path.join(os.tmpdir(), 'scheduling-output.log');
+    const command = `cd "${crewPath}" && NEXT_API_ENDPOINT="${apiEndpoint}" uv run run_from_csv > "${logPath}" 2>&1 &`;
 
     console.log('[API] Executing command:', command);
 
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
     return Response.json({
       success: true,
       message: 'Scheduling pipeline started in background. Check Agent tab for progress.',
-      note: 'Pipeline is running asynchronously. Output logged to /tmp/scheduling-output.log',
+      note: `Pipeline is running asynchronously. Output logged to ${logPath}`,
     });
 
   } catch (error: any) {

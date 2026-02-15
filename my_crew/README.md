@@ -90,6 +90,19 @@ python -m my_crew.main  # then call run_from_csv() from code
 
 Optional env: `CREWAI_CSV_PATH`, `CREWAI_ROOM_IDS` (comma-separated), `CREWAI_ROSTER` (JSON array of `{ "name", "load" }`). Output is written to **`output/`**: `final_allocations.json`, `patient_view.json`, `nurse_view.json`, `hospital_space.json`.
 
+### Voice agent (doctor–patient conversation → nurse briefing)
+
+A separate **voice agent** transcribes doctor–patient conversations and uses an LLM to extract clinically relevant information for the nurse briefing. Flow: **audio file → OpenAI gpt-4o-transcribe → LLM extraction → clinical summary → merged into nurse briefing** so nurses have more context before checking on the patient.
+
+- **Where to put audio:** Use **`my_crew/data/audio/`** for doctor–patient recordings (e.g. `data/audio/patient_0.mp3`). See `data/audio/README.md`.
+- **Requires:** `OPENAI_API_KEY` in `.env` and `openai` (included in dependencies).
+- **CLI:** Run from the **`my_crew`** directory. Transcribe and extract clinical summary from an audio file:
+  ```bash
+  cd my_crew
+  uv run run_voice_agent data/audio/audio.mp3
+  ```
+- **In the pipeline:** When calling `get_risk_for_row()` you can pass `voice_audio_path="data/audio/patient_0.mp3"` (or the full path); the nurse briefing will be enhanced with the voice-derived summary (e.g. chief complaint, symptoms, plan, precautions).
+
 ### Output files
 
 After each run, final allocations are written under **`output/`** (relative to the project root):

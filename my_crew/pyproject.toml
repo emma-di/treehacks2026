@@ -12,6 +12,7 @@ dependencies = [
     "scikit-learn",
     "lightgbm",
     "requests",
+    "openai>=1.0.0",
 ]
 
 [project.scripts]
@@ -19,6 +20,7 @@ my_crew = "my_crew.main:run"
 run_crew = "my_crew.main:run"
 run_from_csv = "my_crew.main:run_from_csv"
 run_two_batches_25 = "my_crew.main:run_two_batches_25"
+run_voice_agent = "my_crew.main:run_voice_agent"
 train = "my_crew.main:train"
 replay = "my_crew.main:replay"
 test = "my_crew.main:test"

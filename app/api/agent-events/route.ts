@@ -112,6 +112,21 @@ export async function POST(request: NextRequest) {
   try {
     const event: Event = await request.json();
     addEvent(event);
+
+    // When pipeline completes, send schedule email to Nurse 1
+    if (event.type === 'pipeline_complete') {
+      const origin = new URL(request.url).origin || 'http://localhost:3000';
+      const url = `${origin}/api/send-schedule-email`;
+      console.log('[agent-events] Triggering schedule email:', url);
+      fetch(url, { method: 'POST' })
+        .then((res) => res.json().then((body) => ({ status: res.status, body })))
+        .then(({ status, body }) => {
+          if (status >= 400) console.error('[agent-events] Schedule email failed:', status, body);
+          else console.log('[agent-events] Schedule email sent:', body);
+        })
+        .catch((err) => console.error('[agent-events] Failed to trigger schedule email:', err));
+    }
+
     return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: 'Invalid event data' }, { status: 400 });
