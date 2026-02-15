@@ -1,11 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { X, Info, ChevronRight } from 'lucide-react';
-import type { HospitalNode } from './components/Globe3D';
-import { EtherealShadow } from './components/ui/ethereal-shadow';
+import { Globe3D } from './components/Globe3D';
+
+const HOSPITALS = [
+  { name: 'Stanford Health Care', href: '/hospital/local', lat: 37.44, lon: -122.14 },
+  { name: 'XX Hospital', href: '/hospital/local', lat: 37.7, lon: -122.2 },
+  { name: 'XY Hospital', href: '/hospital/local', lat: 37.6, lon: -122.0 },
+  { name: 'Local Hospital', href: '/hospital/local', lat: 37.8, lon: -122.4 },
+];
 
 const OutlineTriangle = ({ className = 'text-amber-600' }: { className?: string }) => (
   <svg width="6" height="5" viewBox="0 0 6 5" fill="none" stroke="currentColor" strokeWidth="1.1" className={`inline-block mt-0.5 flex-shrink-0 ${className}`} aria-hidden>
@@ -13,39 +19,126 @@ const OutlineTriangle = ({ className = 'text-amber-600' }: { className?: string 
   </svg>
 );
 
-const Globe3D = dynamic(
-  () => import('./components/Globe3D').then((m) => m.Globe3D),
-  { ssr: false }
-);
-
-const HOSPITALS: HospitalNode[] = [
-  { name: 'Stanford Health Care', href: '/hospital/local', lat: 37.4, lon: -122.2 },
-  { name: 'XX Hospital', href: '/hospital/local', lat: 35.7, lon: 139.7 },
-  { name: 'XY Hospital', href: '/hospital/local', lat: -23.5, lon: -46.6 },
-  { name: 'Local Hospital', href: '/hospital/local', lat: 40.7, lon: -74.0 },
-];
-
 export default function Home() {
   const router = useRouter();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const modalContent = detailsOpen ? (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 99999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        background: 'rgba(15, 23, 42, 0.2)',
+        backdropFilter: 'blur(8px)',
+        animation: 'modalFadeIn 0.2s ease-out forwards',
+      }}
+      onClick={() => setDetailsOpen(false)}
+      aria-modal="true"
+      role="dialog"
+      aria-label="How it works"
+    >
+      <style>
+        {`
+          @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes modalSlideIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+          }
+        `}
+      </style>
+      <div
+        className="bg-white rounded-xl shadow-2xl border border-blue-200/80 p-6 flex flex-col max-h-[85vh] w-full max-w-xl animate-[modalSlideIn_0.25s_cubic-bezier(0.4,0,0.2,1)_forwards]"
+        onClick={(e) => e.stopPropagation()}
+        style={{ flexShrink: 0 }}
+      >
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-blue-200">
+          <h2 className="text-lg font-semibold text-blue-900">How it works</h2>
+          <button
+            type="button"
+            onClick={() => setDetailsOpen(false)}
+            className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors text-blue-600"
+            aria-label="Close"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <div className="overflow-y-auto text-sm text-slate-700 space-y-5 pr-2">
+          <section>
+            <h3 className="text-blue-700 font-semibold mb-2">Local level models</h3>
+            <div className="space-y-3">
+              <div className="rounded-lg border-2 border-blue-200 bg-blue-50/80 p-3 shadow-sm">
+                <div className="font-semibold text-blue-800">Inpatient Transition Model (ITM)</div>
+                <ul className="text-slate-600 text-xs mt-1.5 space-y-0.5 list-none pl-0">
+                  <li>Trained on local EHR data</li>
+                  <li>Predicts odds of ED → inpatient admission</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border-2 border-blue-200 bg-blue-50/80 p-3 shadow-sm">
+                <div className="font-semibold text-blue-800">Time in Care Model (TIC)</div>
+                <ul className="text-slate-600 text-xs mt-1.5 space-y-0.5 list-none pl-0">
+                  <li>Trained on local length-of-stay and flow data</li>
+                  <li>Predicts time in care given IP from ED</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+          <section>
+            <h3 className="text-blue-700 font-semibold mb-2">Agents / process</h3>
+            <ul className="space-y-1 text-sm list-none pl-0">
+              <li className="text-slate-700">Gather patient data</li>
+              <li className="text-slate-700">Resource agent (hospital context)</li>
+              <li className="text-slate-700">
+                Orchestrator agent
+                <ul className="mt-1 ml-4 space-y-0.5 list-none pl-0 border-l-2 border-blue-100 pl-2">
+                  <li className="flex items-start gap-2 text-slate-600 text-xs">
+                    <OutlineTriangle className="text-blue-500 text-[10px]" />
+                    Calls the risk agent, which uses the 2 models
+                  </li>
+                  <li className="flex items-start gap-2 text-slate-600 text-xs">
+                    <OutlineTriangle className="text-blue-500 text-[10px]" />
+                    Allocates / makes schedule
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h3 className="text-blue-700 font-semibold mb-2">Global level: federated learning</h3>
+            <div className="rounded-lg border-2 border-blue-200 bg-blue-50/80 p-3 shadow-sm">
+              <ul className="text-slate-700 text-xs space-y-1 list-none pl-0">
+                <li>Federated learning: train global model</li>
+                <li>Hospitals without a local model can use the global model (e.g. underresourced areas)</li>
+              </ul>
+            </div>
+          </section>
+          <p className="text-slate-500 italic text-xs pt-1">
+            The ties on the globe indicate when a site participates in training the global model.
+          </p>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <div className="min-h-full flex flex-col bg-gradient-to-b from-slate-50 to-white">
-      <div className="flex-1 flex gap-6 p-8 items-stretch justify-center overflow-visible">
-        {/* Globe + CTA */}
-        <div
-          className="flex flex-col items-center justify-center transition-all duration-500 ease-in-out relative"
-          style={{ flex: detailsOpen ? '0 0 50%' : '1 1 100%' }}
-        >
-          {/* Ethereal gold background outside the oval */}
-          <div className="absolute inset-0 -z-10 rounded-2xl overflow-hidden">
-            <EtherealShadow
-              color="rgba(251,191,36,0.5)"
-              animation={{ scale: 100, speed: 90 }}
-              noise={{ opacity: 1, scale: 1.2 }}
-              sizing="fill"
-            />
-          </div>
+      <div className="flex-1 flex p-8 items-center justify-center">
+        {/* Globe — fixed size, never changes */}
+        <div className="flex flex-col items-center flex-shrink-0">
           <div
             className="rounded-full bg-slate-100 shadow-inner overflow-visible flex-shrink-0 transition-transform duration-300 ease-out hover:scale-105 relative"
             style={{ width: 420, height: 500 }}
@@ -71,10 +164,6 @@ export default function Home() {
           <div
             key="details-panel"
             className="flex-1 min-w-0 bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-slate-200/60 p-7 flex flex-col overflow-hidden"
-            style={{
-              animation: 'slideInFade 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards',
-              opacity: 0,
-            }}
           >
             <style>
               {`
@@ -156,22 +245,21 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        {/* Button on the right to expand details (like opening schedule when clicking a room) */}
-        {!detailsOpen && (
-          <div className="flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setDetailsOpen(true)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-amber-500/90 hover:bg-amber-500 text-white font-medium text-sm shadow-sm transition-colors"
-            >
-              <Info className="size-4" />
-              How it works
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-        )}
       </div>
+
+      {mounted && detailsOpen && createPortal(modalContent, document.body)}
+
+      {!detailsOpen && (
+        <button
+          type="button"
+          onClick={() => setDetailsOpen(true)}
+          className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm shadow-md transition-colors z-10"
+        >
+          <Info className="size-4" />
+          How it works
+          <ChevronRight className="size-4" />
+        </button>
+      )}
     </div>
   );
 }

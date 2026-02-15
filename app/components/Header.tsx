@@ -83,7 +83,7 @@ export function Header() {
                                 <h1 className="text-xl font-semibold text-white">Atria</h1>
                             ) : (
                                 <>
-                                    <h1 className="text-xl font-semibold text-white">Hospital Name</h1>
+                                    <h1 className="text-xl font-semibold text-white">Golden State Hospital</h1>
                                     <p className="text-xs text-white/90">Atria</p>
                                 </>
                             )}
