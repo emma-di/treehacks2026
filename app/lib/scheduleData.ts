@@ -141,8 +141,8 @@ export function isTimeInRange(time: number, start: number, stop: number): boolea
 // Get room IDs that are occupied at a given time (has a patient in the room for that time)
 export function getRoomIdsOccupiedAtTime(time: number): string[] {
   return patients
-    .filter(p => p.room !== -1 && typeof p.room === 'string' && isTimeInRange(time, p.start, p.stop))
-    .map(p => String(p.room));
+    .filter(p => p.room !== -1 && p.room !== undefined && isTimeInRange(time, p.start, p.stop))
+    .map(p => (typeof p.room === 'string' && p.room.startsWith('R') ? p.room : `R${p.room}`));
 }
 
 // Get room schedule as time blocks

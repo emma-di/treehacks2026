@@ -510,6 +510,7 @@ export function HospitalMap3D({
           z,
           doorSide,
           selectedRoom === roomId,
+          occupiedRoomIds.includes(roomId),
           floorHitMap
         );
         roomsGroup.add(room);

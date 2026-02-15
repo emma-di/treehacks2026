@@ -11,8 +11,12 @@ import {
     getPatientInRoom,
     formatTime,
     getRoomById,
-    getShortPatientId
+    getShortPatientId,
+    getRoomIdsOccupiedAtTime,
 } from '../lib/scheduleData';
+
+// Demo: assume current time is always 3:30 (3.5 hours from midnight)
+const DEMO_TIME = 3.5;
 
 const HospitalMap3D = dynamic(
     () => import('./HospitalMap3D').then((m) => m.HospitalMap3D),
@@ -92,6 +96,7 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
     };
 
     const selectedRoomSchedule = selectedRoom ? generateRoomSchedule(selectedRoom) : [];
+    const occupiedRoomIds = getRoomIdsOccupiedAtTime(DEMO_TIME);
 
     return (
         <div className="flex gap-6 h-full overflow-hidden">
@@ -109,6 +114,7 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
                         selectedFloor={selectedFloor}
                         selectedRoom={selectedRoom}
                         onRoomSelect={handleRoomClick}
+                        occupiedRoomIds={occupiedRoomIds}
                     />
                 </div>
                 <div className="flex items-center justify-center gap-4 mt-4">
@@ -139,7 +145,7 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
             {selectedRoom && (
                 <div
                     key={selectedRoom}
-                    className="flex-1 bg-white rounded-lg shadow-xl p-6 flex flex-col"
+                    className="flex-1 min-w-0 max-w-xl bg-white rounded-lg shadow-xl p-6 flex flex-col"
                     style={{
                         animation: 'slideInFade 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards',
                         opacity: 0,

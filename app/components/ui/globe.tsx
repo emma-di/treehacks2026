@@ -32,6 +32,10 @@ type Position = {
 export type GlobeConfig = {
     pointSize?: number;
     globeColor?: string;
+    /** 0 = fully transparent sphere, 1 = opaque */
+    globeOpacity?: number;
+    /** If set, points (dots) use this color instead of arc color */
+    pointColor?: string;
     showAtmosphere?: boolean;
     atmosphereColor?: string;
     atmosphereAltitude?: number;
@@ -89,6 +93,8 @@ export function Globe({ globeConfig, data, onPointClick }: WorldProps) {
         atmosphereAltitude: 0.1,
         polygonColor: "rgba(255,255,255,0.7)",
         globeColor: "#1d072e",
+        globeOpacity: 1,
+        pointColor: undefined as string | undefined,
         emissive: "#000000",
         emissiveIntensity: 0.1,
         shininess: 0.9,
@@ -140,17 +146,23 @@ export function Globe({ globeConfig, data, onPointClick }: WorldProps) {
             emissive: Color;
             emissiveIntensity: number;
             shininess: number;
+            transparent?: boolean;
+            opacity?: number;
         };
         globeMaterial.color = new Color(globeConfig.globeColor);
         globeMaterial.emissive = new Color(globeConfig.emissive);
         globeMaterial.emissiveIntensity = globeConfig.emissiveIntensity || 0.1;
         globeMaterial.shininess = globeConfig.shininess || 0.9;
+        const opacity = globeConfig.globeOpacity ?? 1;
+        if ('transparent' in globeMaterial) globeMaterial.transparent = opacity < 1;
+        if ('opacity' in globeMaterial) globeMaterial.opacity = opacity;
     }, [
         isInitialized,
         globeConfig.globeColor,
         globeConfig.emissive,
         globeConfig.emissiveIntensity,
         globeConfig.shininess,
+        globeConfig.globeOpacity,
     ]);
 
     // Build data when globe is initialized or when data changes
@@ -162,17 +174,18 @@ export function Globe({ globeConfig, data, onPointClick }: WorldProps) {
         for (let i = 0; i < arcs.length; i++) {
             const arc = arcs[i];
             const rgb = hexToRgb(arc.color) as { r: number; g: number; b: number };
+            const pointColor = defaultProps.pointColor ?? arc.color;
             points.push({
                 size: defaultProps.pointSize,
                 order: arc.order,
-                color: arc.color,
+                color: pointColor,
                 lat: arc.startLat,
                 lng: arc.startLng,
             });
             points.push({
                 size: defaultProps.pointSize,
                 order: arc.order,
-                color: arc.color,
+                color: pointColor,
                 lat: arc.endLat,
                 lng: arc.endLng,
             });
@@ -279,7 +292,7 @@ export function WebGLRendererConfig() {
     useEffect(() => {
         gl.setPixelRatio(window.devicePixelRatio);
         gl.setSize(size.width, size.height);
-        gl.setClearColor(0xffaaff, 0);
+        gl.setClearColor(0x000000, 0);
     }, []);
 
     return null;
