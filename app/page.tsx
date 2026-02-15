@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { X, Info, ChevronRight } from 'lucide-react';
+import { useHospitalLoading } from './context/HospitalLoadingContext';
 import type { GlobeConfig } from './components/ui/globe';
 import { NavyShaderBackground } from './components/ui/navy-shader-background';
 
@@ -77,6 +78,7 @@ const OutlineTriangle = ({ className = 'text-amber-600' }: { className?: string 
 
 export default function Home() {
   const router = useRouter();
+  const { setShowHospitalLoading } = useHospitalLoading();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -86,6 +88,7 @@ export default function Home() {
       Math.abs(lat - BAY_AREA_LAT) <= CLICK_TOLERANCE_DEG &&
       Math.abs(lng - BAY_AREA_LNG) <= CLICK_TOLERANCE_DEG
     ) {
+      setShowHospitalLoading(true);
       router.push('/hospital/local');
     }
   };
@@ -206,7 +209,7 @@ export default function Home() {
         {/* Globe — fixed size, aspect 1.2 to match Canvas so it never squishes */}
         <div className="flex flex-col items-center flex-shrink-0">
           <div
-            className="rounded-[2rem] overflow-hidden flex-shrink-0 transition-transform duration-300 ease-out hover:scale-[1.02] ring-2 ring-white/20 shadow-[0_0_60px_-15px_rgba(251,191,36,0.15)]"
+            className="rounded-[2rem] overflow-hidden flex-shrink-0 transition-transform duration-300 ease-out hover:scale-[1.02]"
             style={{
               width: GLOBE_WIDTH,
               height: GLOBE_HEIGHT,
@@ -223,7 +226,7 @@ export default function Home() {
             />
           </div>
           <p className="text-slate-400 text-sm text-center max-w-md mt-6">
-            Click the Bay Area (where the arcs meet) to view the hospital floor plan and local system.
+            Click a node to view the hospital floor plan and local system.
           </p>
         </div>
       </div>
@@ -234,7 +237,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setDetailsOpen(true)}
-          className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium text-sm shadow-md transition-colors z-10"
+          className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#0f172a] hover:bg-[#1e3a5f] text-white font-medium text-sm shadow-md transition-colors z-10"
         >
           <Info className="size-4" />
           How it works

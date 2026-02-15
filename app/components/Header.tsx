@@ -71,6 +71,17 @@ export function Header() {
         }
     };
 
+    if (isHomePage) {
+        return (
+            <header className="absolute top-0 left-0 right-0 z-20 px-6 pt-4">
+                <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity w-fit">
+                    <AtriaLogo className="text-white" size={40} />
+                    <h1 className="text-xl font-semibold text-white">Atria</h1>
+                </Link>
+            </header>
+        );
+    }
+
     return (
         <header className="bg-gradient-to-r from-blue-600 via-blue-400 to-white shadow-md">
             <div className="px-6 pt-4 pb-3">
@@ -79,20 +90,15 @@ export function Header() {
                     <Link href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
                         <AtriaLogo className="text-white" size={40} />
                         <div>
-                            {isHomePage ? (
-                                <h1 className="text-xl font-semibold text-white">Atria</h1>
-                            ) : (
-                                <>
-                                    <h1 className="text-xl font-semibold text-white">Golden State Hospital</h1>
-                                    <p className="text-xs text-white/90">Atria</p>
-                                </>
-                            )}
+                            <>
+                                <h1 className="text-xl font-semibold text-white">Golden State Hospital</h1>
+                                <p className="text-xs text-white/90">Atria</p>
+                            </>
                         </div>
                     </Link>
 
-                    {/* Navigation and scheduling: only show on hospital/patient/provider/agent pages */}
-                    {!isHomePage && (
-                        <div className="flex items-center gap-4">
+                    {/* Navigation and scheduling */}
+                    <div className="flex items-center gap-4">
                             <nav className="relative flex items-center gap-1">
                                 {navigationItems.map((item, index) => (
                                     <Link
@@ -152,7 +158,6 @@ export function Header() {
                                 </button>
                             </div>
                         </div>
-                    )}
                 </div>
             </div>
         </header>
