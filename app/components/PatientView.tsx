@@ -5,374 +5,161 @@ import { Search, X, Clock, BedDouble, Calendar, ChevronDown, ChevronUp, ArrowUpD
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { findProviderByName } from './ProviderView';
+import {
+    getScheduledPatients,
+    getUnscheduledPatients,
+    formatTime,
+    getRoomNurseAssignments,
+    getShortPatientId
+} from '../lib/scheduleData';
 
-// Mock patient data
-const patients = [
-    {
-        id: 'P027',
-        name: 'Michael Anderson',
-        provider: 'Dr. Sarah Chen',
-        lengthOfStay: '3 days',
-        room: 'R102',
-        admitDate: '2026-02-11',
-        condition: 'Post-surgical recovery',
-        status: 'admitted' as const,
-        acuity: 'Medium',
-        briefing: '68M s/p appendectomy, recovering well. Ambulating independently. Pain controlled with PO meds.',
-        vitals: {
-            bp: '128/82',
-            hr: '76',
-            temp: '98.4°F',
-            o2: '97%',
-            rr: '16'
-        }
-    },
-    {
-        id: 'P143',
-        name: 'Jennifer Williams',
-        provider: 'Dr. Michael Rodriguez',
-        lengthOfStay: '5 days',
-        room: 'R305',
-        admitDate: '2026-02-09',
-        condition: 'Cardiac monitoring',
-        status: 'admitted' as const,
-        acuity: 'High',
-        briefing: '72F admitted with NSTEMI. On telemetry, awaiting cath lab. Troponins trending down. Chest pain free x24h.',
-        vitals: {
-            bp: '142/88',
-            hr: '82',
-            temp: '98.1°F',
-            o2: '95%',
-            rr: '18'
-        }
-    },
-    {
-        id: 'P089',
-        name: 'Robert Johnson',
-        provider: 'Dr. Emily Thompson',
-        lengthOfStay: '2 days',
-        room: 'R208',
-        admitDate: '2026-02-12',
-        condition: 'Observation',
-        status: 'admitted' as const,
-        acuity: 'Low',
-        briefing: '45M admitted for syncope workup. All tests negative. Ready for discharge pending cardiology clearance.',
-        vitals: {
-            bp: '118/76',
-            hr: '68',
-            temp: '98.6°F',
-            o2: '99%',
-            rr: '14'
-        }
-    },
-    {
-        id: 'P156',
-        name: 'Sarah Martinez',
-        provider: 'Dr. James Wilson',
-        lengthOfStay: '7 days',
-        room: 'R401',
-        admitDate: '2026-02-07',
-        condition: 'Neurological assessment',
-        status: 'discharging' as const,
-        expectedDischarge: '2026-02-15',
-        acuity: 'Medium',
-        briefing: '56F s/p ischemic CVA, right sided weakness improving. PT/OT cleared for home with services.',
-        vitals: {
-            bp: '136/84',
-            hr: '74',
-            temp: '98.3°F',
-            o2: '98%',
-            rr: '16'
-        }
-    },
-    {
-        id: 'P203',
-        name: 'David Thompson',
-        provider: 'Dr. Lisa Anderson',
-        lengthOfStay: '4 days',
-        room: 'R112',
-        admitDate: '2026-02-10',
-        condition: 'Treatment protocol',
-        status: 'admitted' as const,
-        acuity: 'Medium',
-        briefing: '62M on chemotherapy cycle 3/6 for colon cancer. Nausea managed, counts stable. Tolerating PO intake.',
-        vitals: {
-            bp: '124/78',
-            hr: '72',
-            temp: '98.8°F',
-            o2: '96%',
-            rr: '15'
-        }
-    },
-    {
-        id: 'E091',
-        name: 'Maria Garcia',
-        provider: 'TBD',
-        room: 'ER-3',
-        condition: 'Chest pain evaluation',
-        status: 'er' as const,
-        arrivalTime: '11:45 AM',
-        waitTime: '2h 15m',
-        acuity: 'High',
-        briefing: '58F c/o substernal chest pressure x2h. EKG shows ST changes. Awaiting troponins and cardiology consult.',
-        vitals: {
-            bp: '156/94',
-            hr: '92',
-            temp: '98.2°F',
-            o2: '94%',
-            rr: '20'
-        }
-    },
-    {
-        id: 'P178',
-        name: 'James Brown',
-        provider: 'Dr. Jennifer Martinez',
-        lengthOfStay: '1 day',
-        room: 'R503',
-        admitDate: '2026-02-13',
-        condition: 'Diagnostic imaging',
-        status: 'discharging' as const,
-        expectedDischarge: '2026-02-14',
-        acuity: 'Low',
-        briefing: '34M post CT-guided biopsy. No complications. Pain minimal. Discharge today with f/u in clinic.',
-        vitals: {
-            bp: '122/74',
-            hr: '70',
-            temp: '98.5°F',
-            o2: '99%',
-            rr: '14'
-        }
-    },
-    {
-        id: 'E104',
-        name: 'Lisa Davis',
-        provider: 'TBD',
-        room: 'ER-7',
-        condition: 'Abdominal pain',
-        status: 'er' as const,
-        arrivalTime: '01:20 PM',
-        waitTime: '45m',
-        acuity: 'Medium',
-        briefing: '28F RLQ pain x6h, fever 100.8. Labs pending, US ordered to r/o appendicitis.',
-        vitals: {
-            bp: '118/72',
-            hr: '88',
-            temp: '100.8°F',
-            o2: '98%',
-            rr: '16'
-        }
-    },
-    {
-        id: 'S045',
-        name: 'Christopher Wilson',
-        provider: 'Dr. Sarah Chen',
-        condition: 'Hip replacement surgery',
-        status: 'scheduled' as const,
-        scheduledDate: '2026-02-15',
-        scheduledTime: '07:00 AM',
-        acuity: 'Medium',
-        briefing: '71M scheduled for elective R total hip arthroplasty. Pre-op clearance complete. NPO after midnight.',
-        vitals: {
-            bp: '130/80',
-            hr: '68',
-            temp: '98.4°F',
-            o2: '98%',
-            rr: '14'
-        }
-    },
-    {
-        id: 'P134',
-        name: 'Amanda Rodriguez',
-        provider: 'Dr. Emily Thompson',
-        lengthOfStay: '2 days',
-        room: 'R107',
-        admitDate: '2026-02-12',
-        condition: 'Pediatric care',
-        status: 'admitted' as const,
-        acuity: 'Low',
-        briefing: '8F admitted for asthma exacerbation. Responding well to steroids and nebs. No distress, awaiting 24h observation.',
-        vitals: {
-            bp: '102/64',
-            hr: '90',
-            temp: '98.0°F',
-            o2: '98%',
-            rr: '18'
-        }
-    },
-    {
-        id: 'E087',
-        name: 'Kevin Martinez',
-        provider: 'TBD',
-        room: 'ER-5',
-        condition: 'Fracture assessment',
-        status: 'er' as const,
-        arrivalTime: '12:30 PM',
-        waitTime: '1h 30m',
-        acuity: 'Medium',
-        briefing: '42M fell from ladder, suspected L radius fracture. X-ray confirms distal radius fx. Awaiting ortho for reduction.',
-        vitals: {
-            bp: '134/86',
-            hr: '78',
-            temp: '98.6°F',
-            o2: '99%',
-            rr: '15'
-        }
-    },
-    {
-        id: 'S062',
-        name: 'Patricia Lee',
-        provider: 'Dr. Michael Rodriguez',
-        condition: 'Cardiac catheterization',
-        status: 'scheduled' as const,
-        scheduledDate: '2026-02-16',
-        scheduledTime: '09:30 AM',
-        acuity: 'High',
-        briefing: '65F scheduled for diagnostic cath for abnormal stress test. Hx CAD, on dual antiplatelet therapy.',
-        vitals: {
-            bp: '138/82',
-            hr: '76',
-            temp: '98.3°F',
-            o2: '97%',
-            rr: '15'
-        }
-    },
+// Define patient type
+type Patient = {
+    id: string;
+    name: string;
+    provider: string;
+    lengthOfStay?: string;
+    room?: string;
+    admitDate?: string;
+    condition: string;
+    status: 'admitted' | 'discharging' | 'er' | 'scheduled';
+    acuity: 'High' | 'Medium' | 'Low';
+    briefing: string;
+    vitals: {
+        bp: string;
+        hr: string;
+        temp: string;
+        o2: string;
+        rr: string;
+    };
+    startTime: number;
+    stopTime: number;
+    waitTime?: string;
+    arrivalTime?: string;
+    scheduledDate?: string;
+    scheduledTime?: string;
+    expectedDischarge?: string;
+};
+
+// Get real patient data
+const allScheduledPatients = getScheduledPatients();
+const allUnscheduledPatients = getUnscheduledPatients();
+
+// Transform real patient data to match the component structure
+const patients: Patient[] = [
+    ...allScheduledPatients.map(p => {
+        const shortId = getShortPatientId(p.id);
+        return {
+            id: shortId,
+            name: shortId,
+            provider: 'Provider Assigned',
+            lengthOfStay: p.stop !== -1 ? `${(p.stop - p.start).toFixed(1)} hours` : 'N/A',
+            room: typeof p.room === 'string' ? p.room : 'N/A',
+            admitDate: '2026-02-15', // Tomorrow's date
+            condition: 'In treatment',
+            status: 'admitted' as const,
+            acuity: 'Medium' as const,
+            briefing: `Patient scheduled from ${formatTime(p.start)} to ${formatTime(p.stop)} in room ${p.room}`,
+            vitals: {
+                bp: '120/80',
+                hr: '72',
+                temp: '98.6°F',
+                o2: '98%',
+                rr: '16'
+            },
+            startTime: p.start,
+            stopTime: p.stop,
+        };
+    }),
+    ...allUnscheduledPatients.map(p => {
+        const shortId = getShortPatientId(p.id);
+        return {
+            id: shortId,
+            name: shortId,
+            provider: 'TBD',
+            lengthOfStay: 'N/A',
+            room: 'N/A',
+            admitDate: '2026-02-15',
+            condition: 'Awaiting room assignment',
+            status: 'er' as const,
+            acuity: 'Low' as const,
+            briefing: 'Patient awaiting room assignment and schedule',
+            vitals: {
+                bp: '120/80',
+                hr: '72',
+                temp: '98.6°F',
+                o2: '98%',
+                rr: '16'
+            },
+            startTime: -1,
+            stopTime: -1,
+            waitTime: 'N/A',
+        };
+    }),
 ];
 
 // Export function to find patient by ID (used by FloorPlanGrid)
-export const findPatientById = (patientId: string) => {
+export const findPatientById = (patientId: string): Patient | null => {
     return patients.find(p => p.id === patientId) || null;
 };
 
-// Mock daily schedule for a patient
+// Generate patient schedule based on real data
 const generatePatientSchedule = (patientId: string) => {
-    return [
-        {
-            time: '06:00',
-            activity: 'Vital Signs Check',
-            provider: 'M. Garcia (Nurse)',
-            notes: 'Morning assessment',
-            status: 'completed'
-        },
-        {
-            time: '07:00',
-            activity: 'Morning Labs',
-            provider: 'Lab - Phlebotomy',
-            notes: 'CBC, BMP, troponin',
-            status: 'completed'
-        },
-        {
-            time: '08:00',
-            activity: 'Medication Administration',
-            provider: 'J. Patterson (Nurse)',
-            notes: 'Pain management protocol',
-            status: 'completed'
-        },
-        {
-            time: '08:30',
-            activity: 'Breakfast & Dietary Assessment',
-            provider: 'Dietary Services',
-            notes: 'Nutritional evaluation',
-            status: 'completed'
-        },
-        {
-            time: '09:30',
-            activity: 'Doctor Rounds',
-            provider: 'Dr. Sarah Chen',
-            notes: 'Daily evaluation',
-            status: 'completed'
-        },
-        {
-            time: '10:00',
-            activity: 'Wound Care',
-            provider: 'K. Nguyen (Nurse)',
-            notes: 'Dressing change and assessment',
-            status: 'completed'
-        },
-        {
-            time: '11:00',
-            activity: 'Physical Therapy',
-            provider: 'PT - K. Stevens',
-            notes: 'Mobility exercises',
+    const patient = patients.find(p => p.id === patientId);
+
+    if (!patient || patient.startTime === -1) {
+        return [];
+    }
+
+    // Get nurse assignments for the patient's room
+    const roomId = typeof patient.room === 'string' ? patient.room : '';
+    const nurseAssignments = roomId !== 'N/A' ? getRoomNurseAssignments(roomId) : [];
+
+    const schedule: Array<{
+        time: string;
+        activity: string;
+        provider: string;
+        notes: string;
+        status: string;
+    }> = [];
+
+    // Add room admission entry
+    schedule.push({
+        time: formatTime(patient.startTime),
+        activity: 'Room Admission',
+        provider: 'Hospital Staff',
+        notes: `Admitted to ${patient.room}`,
+        status: 'completed'
+    });
+
+    // Add nurse visit entries
+    nurseAssignments.forEach(assignment => {
+        schedule.push({
+            time: formatTime(assignment.start),
+            activity: 'Nurse Visit',
+            provider: assignment.id,
+            notes: `Visit duration: ${((assignment.stop - assignment.start) * 60).toFixed(0)} minutes`,
             status: 'upcoming'
-        },
-        {
-            time: '12:00',
-            activity: 'Lunch',
-            provider: 'Dietary Services',
-            notes: 'Regular diet',
+        });
+    });
+
+    // Add discharge entry if applicable
+    if (patient.stopTime !== -1) {
+        schedule.push({
+            time: formatTime(patient.stopTime),
+            activity: 'Expected Discharge',
+            provider: 'Hospital Staff',
+            notes: `Leaving ${patient.room}`,
             status: 'upcoming'
-        },
-        {
-            time: '13:00',
-            activity: 'Family Meeting',
-            provider: 'Dr. Sarah Chen',
-            notes: 'Discharge planning discussion',
-            status: 'upcoming'
-        },
-        {
-            time: '14:00',
-            activity: 'Diagnostic Test',
-            provider: 'Lab - Radiology',
-            notes: 'Chest X-ray',
-            status: 'upcoming'
-        },
-        {
-            time: '15:00',
-            activity: 'Respiratory Therapy',
-            provider: 'RT - D. Foster',
-            notes: 'Breathing treatments',
-            status: 'upcoming'
-        },
-        {
-            time: '16:00',
-            activity: 'Medication Administration',
-            provider: 'A. Brown (Nurse)',
-            notes: 'Afternoon medications',
-            status: 'upcoming'
-        },
-        {
-            time: '16:30',
-            activity: 'Specialist Consultation',
-            provider: 'Dr. Michael Rodriguez',
-            notes: 'Cardiology review',
-            status: 'upcoming'
-        },
-        {
-            time: '17:30',
-            activity: 'Dinner',
-            provider: 'Dietary Services',
-            notes: 'Regular diet',
-            status: 'upcoming'
-        },
-        {
-            time: '18:00',
-            activity: 'Vital Signs Check',
-            provider: 'R. Kim (Nurse)',
-            notes: 'Evening assessment',
-            status: 'upcoming'
-        },
-        {
-            time: '19:00',
-            activity: 'Evening Medication',
-            provider: 'A. Brown (Nurse)',
-            notes: 'Scheduled medications',
-            status: 'upcoming'
-        },
-        {
-            time: '20:00',
-            activity: 'Social Work Consult',
-            provider: 'SW - J. Martinez',
-            notes: 'Home care arrangements',
-            status: 'upcoming'
-        },
-        {
-            time: '21:00',
-            activity: 'Night Shift Assessment',
-            provider: 'M. Johnson (Nurse)',
-            notes: 'Handoff and evaluation',
-            status: 'upcoming'
-        },
-    ];
+        });
+    }
+
+    // Sort by time
+    return schedule.sort((a, b) => {
+        const timeA = parseFloat(a.time.split(':')[0]) + parseFloat(a.time.split(':')[1]) / 60;
+        const timeB = parseFloat(b.time.split(':')[0]) + parseFloat(b.time.split(':')[1]) / 60;
+        return timeA - timeB;
+    });
 };
 
 interface PatientViewProps {
@@ -382,9 +169,9 @@ interface PatientViewProps {
 export function PatientView({ initialPatientId }: PatientViewProps) {
     const searchParams = useSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedPatient, setSelectedPatient] = useState<typeof patients[0] | null>(null);
-    const [inpatientsExpanded, setInpatientsExpanded] = useState(true);
-    const [erPendingExpanded, setErPendingExpanded] = useState(true);
+    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+    const [inpatientsExpanded, setInpatientsExpanded] = useState(false); // Collapsed by default
+    const [erPendingExpanded, setErPendingExpanded] = useState(false); // Collapsed by default
     const [sortBy, setSortBy] = useState<'acuity' | 'room' | 'length'>('acuity');
 
     // Handle initial patient selection from URL
@@ -399,24 +186,32 @@ export function PatientView({ initialPatientId }: PatientViewProps) {
     }, [searchParams, initialPatientId]);
 
     // Sort functions
-    const sortByAcuity = (a: typeof patients[0], b: typeof patients[0]) => {
+    const sortByAcuity = (a: Patient, b: Patient) => {
         const acuityOrder = { 'High': 0, 'Medium': 1, 'Low': 2 };
-        return acuityOrder[a.acuity as keyof typeof acuityOrder] - acuityOrder[b.acuity as keyof typeof acuityOrder];
+        return acuityOrder[a.acuity] - acuityOrder[b.acuity];
     };
 
-    const sortByRoom = (a: typeof patients[0], b: typeof patients[0]) => {
+    const sortByRoom = (a: Patient, b: Patient) => {
         if (!a.room || !b.room) return 0;
         return a.room.localeCompare(b.room);
     };
 
-    const sortByLength = (a: typeof patients[0], b: typeof patients[0]) => {
+    const sortByLength = (a: Patient, b: Patient) => {
         // For inpatients, sort by length of stay
         if (a.lengthOfStay && b.lengthOfStay) {
-            return parseInt(b.lengthOfStay) - parseInt(a.lengthOfStay);
+            const aVal = parseFloat(a.lengthOfStay);
+            const bVal = parseFloat(b.lengthOfStay);
+            if (!isNaN(aVal) && !isNaN(bVal)) {
+                return bVal - aVal;
+            }
         }
         // For ER patients, sort by wait time
         if (a.waitTime && b.waitTime) {
-            return parseInt(b.waitTime) - parseInt(a.waitTime);
+            const aVal = parseFloat(a.waitTime);
+            const bVal = parseFloat(b.waitTime);
+            if (!isNaN(aVal) && !isNaN(bVal)) {
+                return bVal - aVal;
+            }
         }
         return 0;
     };
@@ -471,7 +266,7 @@ export function PatientView({ initialPatientId }: PatientViewProps) {
     };
 
     // Patient card component (without name)
-    const PatientCard = ({ patient }: { patient: typeof patients[0] }) => {
+    const PatientCard = ({ patient }: { patient: Patient }) => {
         const statusInfo = getStatusInfo(patient.status);
         return (
             <div

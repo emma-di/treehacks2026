@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { getNurseAssignments, formatTime, getPatientInRoom, getShortPatientId, getUniqueNurseIds } from '../lib/scheduleData';
 
-// Mock data
+// Mock data for doctors (not in the crew data)
 const doctors = [
     { id: 'D001', name: 'Dr. Sarah Chen', field: 'MD/Cardiology' },
     { id: 'D002', name: 'Dr. Michael Rodriguez', field: 'MD/Surgery' },
@@ -16,20 +18,12 @@ const doctors = [
     { id: 'D008', name: 'Dr. David Lee', field: 'MD/Emergency Medicine' },
 ];
 
-const nurses = [
-    { id: 'N001', name: 'Maria Garcia' },
-    { id: 'N002', name: 'John Patterson' },
-    { id: 'N003', name: 'Ashley Brown' },
-    { id: 'N004', name: 'Kevin Nguyen' },
-    { id: 'N005', name: 'Rachel Kim' },
-    { id: 'N006', name: 'Marcus Johnson' },
-    { id: 'N007', name: 'Samantha Wright' },
-    { id: 'N008', name: 'Daniel Foster' },
-    { id: 'N009', name: 'Christine Lopez' },
-    { id: 'N010', name: 'Tyler Mitchell' },
-    { id: 'N011', name: 'Amanda Davis' },
-    { id: 'N012', name: 'Brian Cooper' },
-];
+// Get real nurse data from crew output (will be 30 nurses after backend regeneration)
+const nurseIds = getUniqueNurseIds();
+const nurses = nurseIds.map(id => ({
+    id,
+    name: id.replace('_', ' ') // Convert Nurse_1 to Nurse 1 for display
+}));
 
 // Export function to find provider by name (used by FloorPlanGrid)
 export const findProviderByName = (name: string): string | null => {
@@ -49,7 +43,7 @@ export const findProviderByName = (name: string): string | null => {
     // For nurses: first letter of FIRST name + last name
     const nurse = nurses.find(n => {
         const firstName = n.name.split(' ')[0];
-        const lastName = n.name.split(' ')[1];
+        const lastName = n.name.split(' ')[1] || '';
         const initial = firstName.charAt(0);
         return `${initial}. ${lastName}` === name || n.name === name;
     });
@@ -60,60 +54,35 @@ export const findProviderByName = (name: string): string | null => {
 // Export function to get all providers (used by FloorPlanGrid for data)
 export const getAllProviders = () => ({ doctors, nurses });
 
-// Mock schedule data
+// Generate provider schedule from real data
 const generateProviderSchedule = (providerId: string) => {
-    return [
-        {
-            time: '08:00',
-            room: 'R305',
-            patient: 'P143',
-            notes: 'Post-op check',
-            todos: [
-                'Check surgical site',
-                'Update recovery plan'
-            ]
-        },
-        {
-            time: '09:30',
-            room: 'R102',
-            patient: 'P027',
-            notes: 'Consultation',
-            todos: [
-                'Review test results',
-                'Discuss treatment options'
-            ]
-        },
-        {
-            time: '11:00',
-            room: 'R208',
-            patient: 'P089',
-            notes: 'Follow-up',
-            todos: [
-                'Check medication compliance',
-                'Schedule next appointment'
-            ]
-        },
-        {
-            time: '14:00',
-            room: 'R401',
-            patient: 'P156',
-            notes: 'Initial exam',
-            todos: [
-                'Complete intake form',
-                'Order baseline labs'
-            ]
-        },
-        {
-            time: '15:30',
-            room: 'R112',
-            patient: 'P203',
-            notes: 'Treatment review',
-            todos: [
-                'Adjust medication dosage',
-                'Document progress'
-            ]
-        },
-    ];
+    // Check if it's a nurse
+    const isNurse = nurses.some(n => n.id === providerId);
+
+    if (isNurse) {
+        const assignments = getNurseAssignments(providerId);
+
+        return assignments.map(assignment => {
+            const patient = getPatientInRoom(assignment.room);
+
+            return {
+                time: formatTime(assignment.start),
+                timeValue: assignment.start,
+                room: assignment.room,
+                patient: patient ? getShortPatientId(patient.id) : 'N/A',
+                notes: `Visit from ${formatTime(assignment.start)} to ${formatTime(assignment.stop)}`,
+                duration: `${((assignment.stop - assignment.start) * 60).toFixed(0)} minutes`,
+                todos: [
+                    'Check vital signs',
+                    'Administer medications',
+                    'Update patient records'
+                ]
+            };
+        });
+    }
+
+    // For doctors, return empty schedule (no doctor data in crew output)
+    return [];
 };
 
 interface Provider {
@@ -381,45 +350,62 @@ export function ProviderView({ initialProviderId }: ProviderViewProps) {
 
                     {/* Schedule Table */}
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        <table className="w-full border-collapse">
-                            <thead className="sticky top-0 bg-white border-b-2 border-gray-200 z-10">
-                                <tr className="text-left">
-                                    <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-20">Time</th>
-                                    <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-16">Room</th>
-                                    <th className="pb-3 pt-2 text-sm font-semibold text-gray-700">Patient</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {generateProviderSchedule(selectedProvider.id).map((appointment, idx) => (
-                                    <tr key={idx} className="border-b last:border-b-0">
-                                        <td className="text-sm text-gray-600 pr-3 align-top py-4">
-                                            {appointment.time}
-                                        </td>
-                                        <td className="pr-3 align-top py-4">
-                                            <div className="text-sm font-medium text-gray-700">{appointment.room}</div>
-                                        </td>
-                                        <td className="align-top py-4">
-                                            <div className="bg-blue-50 border-l-4 border-blue-500 rounded px-3 py-3">
-                                                <div className="font-semibold text-blue-700 mb-1">{appointment.patient}</div>
-                                                <div className="text-xs text-blue-600 mb-3">{appointment.notes}</div>
-                                                {/* Embedded Todos */}
-                                                <div className="space-y-2 mt-2">
-                                                    {appointment.todos.map((todo, todoIdx) => (
-                                                        <label key={todoIdx} className="flex items-start gap-2 cursor-pointer group">
-                                                            <input
-                                                                type="checkbox"
-                                                                className="custom-checkbox mt-0.5"
-                                                            />
-                                                            <span className="text-xs text-gray-700 group-hover:text-gray-900">{todo}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </td>
+                        {generateProviderSchedule(selectedProvider.id).length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                No schedule available for this provider
+                            </div>
+                        ) : (
+                            <table className="w-full border-collapse">
+                                <thead className="sticky top-0 bg-white border-b-2 border-gray-200 z-10">
+                                    <tr className="text-left">
+                                        <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-24">Time</th>
+                                        <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-20">Room</th>
+                                        <th className="pb-3 pt-2 text-sm font-semibold text-gray-700">Patient & Details</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {generateProviderSchedule(selectedProvider.id).map((appointment, idx) => (
+                                        <tr key={idx} className="border-b last:border-b-0">
+                                            <td className="text-sm text-gray-600 pr-3 align-top py-4">
+                                                {appointment.time}
+                                            </td>
+                                            <td className="pr-3 align-top py-4">
+                                                <Link
+                                                    href={`/?room=${appointment.room}`}
+                                                    className="text-sm font-medium text-blue-600 hover:underline"
+                                                >
+                                                    {appointment.room}
+                                                </Link>
+                                            </td>
+                                            <td className="align-top py-4">
+                                                <div className="bg-blue-50 border-l-4 border-blue-500 rounded px-3 py-3">
+                                                    <Link
+                                                        href={`/patient?id=${appointment.patient}`}
+                                                        className="font-semibold text-blue-700 hover:underline mb-1 inline-block"
+                                                    >
+                                                        {appointment.patient}
+                                                    </Link>
+                                                    <div className="text-xs text-blue-600 mb-1">{appointment.notes}</div>
+                                                    <div className="text-xs text-blue-500 font-medium">Duration: {appointment.duration}</div>
+                                                    {/* Embedded Todos */}
+                                                    <div className="space-y-2 mt-3 pt-2 border-t border-blue-200">
+                                                        {appointment.todos.map((todo, todoIdx) => (
+                                                            <label key={todoIdx} className="flex items-start gap-2 cursor-pointer group">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="custom-checkbox mt-0.5"
+                                                                />
+                                                                <span className="text-xs text-gray-700 group-hover:text-gray-900">{todo}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             )}

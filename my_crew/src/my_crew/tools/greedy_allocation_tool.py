@@ -1,12 +1,18 @@
 """Greedy algorithm tool for final allocation: best (nurse, room) match given risk profile and feasibility options."""
 
 import json
+import re
 from typing import Any, Type
 
 from crewai.tools import BaseTool
 from pydantic import BaseModel, Field
 
-from my_crew.output_schemas import FinalAllocationBatchOutput, FinalAllocationOutput
+from my_crew.output_schemas import (
+    FinalAllocationBatchOutput,
+    FinalAllocationOutput,
+    NurseCheckRound,
+    NurseCheckSchedule,
+)
 
 
 class GreedyAllocationToolInput(BaseModel):
@@ -52,6 +58,110 @@ def _load_score(nurse_load: int, max_load: int = 6) -> float:
     if max_load <= 0:
         return 1.0
     return max(0.0, 1.0 - (nurse_load / max_load))
+
+
+def _build_nurse_check_schedule(primary_nurse: str, options: list[dict[str, Any]]) -> NurseCheckSchedule:
+    """Nurses who will rotate checks: primary assigned nurse first, then others from feasibility list (order preserved, up to 4). Rotation for checks is based on this list."""
+    seen: set[str] = set()
+    nurses: list[str] = []
+    if primary_nurse and primary_nurse not in seen:
+        seen.add(primary_nurse)
+        nurses.append(primary_nurse)
+    for opt in options:
+        name = opt.get("nurse_name") or opt.get("nurse")
+        if name and name not in seen:
+            seen.add(name)
+            nurses.append(name)
+            if len(nurses) >= 4:
+                break
+    return NurseCheckSchedule(
+        interval_hours=4,
+        duration_minutes="20-30",
+        nurse_names=nurses if nurses else [primary_nurse] if primary_nurse else [],
+    )
+
+
+def _parse_duration_to_hours(duration_of_stay: str | None) -> float:
+    """Parse duration string to approximate hours (e.g. '5-7 days' -> 144, '24-48 hours' -> 36)."""
+    if not duration_of_stay or not isinstance(duration_of_stay, str):
+        return 72.0  # default 3 days
+    s = duration_of_stay.strip().lower()
+    # "5-7 days" -> 6 days; "3 days" -> 3; "24-48 hours" -> 36
+    days_match = re.search(r"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*day", s)
+    if days_match:
+        lo, hi = float(days_match.group(1)), float(days_match.group(2))
+        return (lo + hi) / 2 * 24
+    days_match = re.search(r"(\d+(?:\.\d+)?)\s*day", s)
+    if days_match:
+        return float(days_match.group(1)) * 24
+    hours_match = re.search(r"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*hour", s)
+    if hours_match:
+        lo, hi = float(hours_match.group(1)), float(hours_match.group(2))
+        return (lo + hi) / 2
+    hours_match = re.search(r"(\d+(?:\.\d+)?)\s*hour", s)
+    if hours_match:
+        return float(hours_match.group(1))
+    return 72.0
+
+
+def _build_conflict_free_nurse_rounds(
+    allocations: list[FinalAllocationOutput],
+) -> list[list[NurseCheckRound]]:
+    """Assign (nurse, start, stop) per round. Nurses rotate based on each patient's feasibility list (nurse_check_schedule.nurse_names); no nurse used twice in the same round."""
+    assigned = [a for a in allocations if a.status == "assigned" and a.nurse_check_schedule]
+    if not assigned:
+        return []
+    interval_hours = 4
+    max_rounds = 0
+    for a in assigned:
+        hours = _parse_duration_to_hours(a.duration_of_stay)
+        max_rounds = max(max_rounds, max(1, int(hours / interval_hours)))
+    result: list[list[NurseCheckRound]] = []
+    for a in assigned:
+        nurses = list(a.nurse_check_schedule.nurse_names) if a.nurse_check_schedule else []
+        if not nurses:
+            nurses = [a.nurse_name or "Unknown"]
+        result.append([])
+    # Each round: assign each patient a nurse from their feasibility-list pool, rotating by round index; no double-book
+    for round_idx in range(max_rounds):
+        used_this_round: set[str] = set()
+        start_h = float(round_idx * interval_hours)
+        stop_h = start_h + 0.5  # 30 min = 0.5 h
+        for i, a in enumerate(assigned):
+            nurses = list(a.nurse_check_schedule.nurse_names) if a.nurse_check_schedule else []
+            if not nurses:
+                nurses = [a.nurse_name or "Unknown"]
+            # Rotate by feasibility list: prefer nurse at (round_idx % len); if taken, try rest in order
+            preferred_idx = round_idx % len(nurses)
+            nurse = None
+            for k in range(len(nurses)):
+                n = nurses[(preferred_idx + k) % len(nurses)]
+                if n not in used_this_round:
+                    nurse = n
+                    break
+            if nurse is None:
+                nurse = nurses[0]
+            used_this_round.add(nurse)
+            result[i].append(NurseCheckRound(nurse=nurse, start=start_h, stop=stop_h))
+    return result
+
+
+def _build_single_patient_nurse_rounds(
+    duration_of_stay: str | None,
+    nurse_names: list[str],
+) -> list[NurseCheckRound]:
+    """Build nurse rounds for one patient: rotate through nurses from feasibility list (round 0 → first, round 1 → second, etc.)."""
+    if not nurse_names:
+        return []
+    hours = _parse_duration_to_hours(duration_of_stay)
+    num_rounds = max(1, int(hours / 4))
+    rounds: list[NurseCheckRound] = []
+    for round_idx in range(num_rounds):
+        nurse = nurse_names[round_idx % len(nurse_names)]
+        start_h = float(round_idx * 4)
+        stop_h = start_h + 0.5  # 30 min = 0.5 h
+        rounds.append(NurseCheckRound(nurse=nurse, start=start_h, stop=stop_h))
+    return rounds
 
 
 class GreedyAllocationTool(BaseTool):
@@ -109,6 +219,11 @@ class GreedyAllocationTool(BaseTool):
         best = scored[0][1]
         nurse_name = best.get("nurse_name") or best.get("nurse") or "Unknown"
         room_id = best.get("room_id") or best.get("room") or "Unknown"
+        nurse_check_schedule = _build_nurse_check_schedule(nurse_name, options)
+        nurse_rounds = _build_single_patient_nurse_rounds(
+            duration_of_stay,
+            nurse_check_schedule.nurse_names,
+        )
 
         allocation = FinalAllocationOutput(
             patient_id=patient_id,
@@ -117,7 +232,9 @@ class GreedyAllocationTool(BaseTool):
             risk_category=risk_cat,
             room_id=room_id,
             nurse_name=nurse_name,
+            nurse_check_schedule=nurse_check_schedule,
             duration_of_stay=duration_of_stay,
+            nurse_rounds=nurse_rounds,
         )
         return allocation.model_dump_json()
 
@@ -306,6 +423,7 @@ class GreedyAllocationBatchTool(BaseTool):
             best = scored[0][1]
             nurse_name = best.get("nurse_name") or best.get("nurse") or "Unknown"
             room_id = best.get("room_id") or best.get("room") or "Unknown"
+            nurse_check_schedule = _build_nurse_check_schedule(nurse_name, available)
 
             used_pairs.add((nurse_name, room_id))
             allocations.append(
@@ -316,9 +434,17 @@ class GreedyAllocationBatchTool(BaseTool):
                     risk_category=risk_cat,
                     room_id=room_id,
                     nurse_name=nurse_name,
+                    nurse_check_schedule=nurse_check_schedule,
                     duration_of_stay=duration_of_stay,
                 )
             )
+
+        # Assign conflict-free nurse rounds so no nurse is in two places at the same time
+        assigned = [a for a in allocations if a.status == "assigned"]
+        if assigned:
+            rounds_per = _build_conflict_free_nurse_rounds(assigned)
+            for alloc, rounds in zip(assigned, rounds_per):
+                alloc.nurse_rounds = rounds
 
         batch = FinalAllocationBatchOutput(allocations=allocations)
         return batch.model_dump_json()

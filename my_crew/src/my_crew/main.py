@@ -5,8 +5,15 @@ import sys
 import warnings
 
 from my_crew.crew import MyCrew
+from my_crew.csv_pipeline import run_csv_pipeline, write_pipeline_output
+from my_crew.output_writer import write_allocation_output
 
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
+
+# Directory for final allocation output files (final_allocations.json, nurse_view.json, patient_view.json)
+# Resolved relative to my_crew package root so output/ appears next to src/, data/, etc.
+_OUTPUT_DIR_REL = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "output")
+OUTPUT_DIR = os.path.abspath(_OUTPUT_DIR_REL)
 
 # This main file is intended to be a way for you to run your
 # crew locally, so refrain from adding unnecessary logic into this file.
@@ -54,6 +61,8 @@ Risk category: Observation. Prefer nurses with ICU-certified or ER-specialist ce
 Allowed room types: Isolation, Negative Pressure, or General. Prefer nurses with lowest current load (max_nurse_load 5).
 """
 
+# Encounter ID for Risk Agent model tools (must exist in data/demo_patients.csv; UUIDs from your demo_patients.csv)
+SAMPLE_ENCOUNTER_ID = "cabced5f-8a58-4c55-9976-f544a9885196"
 # Sample inputs for the Orchestrator Agent task (risk profile + feasibility)
 SAMPLE_PATIENT_ID = "Patient A"
 SAMPLE_RISK_PROFILE_JSON = '{"risk_profile": {"numeric_score": 0.4, "risk_category": "Observation"}, "predicted_duration_of_stay": "24-48 hours"}'
@@ -246,6 +255,7 @@ def get_inputs(scenario: str = "default"):
 
     scenarios = {
         "default": {
+            "encounter_id": SAMPLE_ENCOUNTER_ID,
             "clinical_records": SAMPLE_CLINICAL_RECORDS,
             "real_time_vitals": SAMPLE_REAL_TIME_VITALS,
             "staff_roster": SAMPLE_STAFF_ROSTER,
@@ -258,6 +268,7 @@ def get_inputs(scenario: str = "default"):
             "patients_json": default_patients,
         },
         "critical": {
+            "encounter_id": "644e8f9e-d2bc-41bc-a0a8-dbeefaac4bcf",
             "clinical_records": CRITICAL_CLINICAL_RECORDS,
             "real_time_vitals": CRITICAL_REAL_TIME_VITALS,
             "staff_roster": CRITICAL_STAFF_ROSTER,
@@ -270,6 +281,7 @@ def get_inputs(scenario: str = "default"):
             "patients_json": critical_patients,
         },
         "complex": {
+            "encounter_id": "85a9a3b1-2ef1-4dbe-ace9-b856751ad156",
             "clinical_records": COMPLEX_CLINICAL_RECORDS,
             "real_time_vitals": COMPLEX_REAL_TIME_VITALS,
             "staff_roster": COMPLEX_STAFF_ROSTER,
@@ -282,6 +294,7 @@ def get_inputs(scenario: str = "default"):
             "patients_json": complex_patients,
         },
         "waitlist": {
+            "encounter_id": "8db55a98-2954-4f41-a13b-951fe709ace2",
             "clinical_records": WAITLIST_CLINICAL_RECORDS,
             "real_time_vitals": WAITLIST_REAL_TIME_VITALS,
             "staff_roster": WAITLIST_STAFF_ROSTER,
@@ -294,6 +307,7 @@ def get_inputs(scenario: str = "default"):
             "patients_json": waitlist_patients,
         },
         "multi": {
+            "encounter_id": SAMPLE_ENCOUNTER_ID,
             "clinical_records": SAMPLE_CLINICAL_RECORDS,
             "real_time_vitals": SAMPLE_REAL_TIME_VITALS,
             "staff_roster": COMPLEX_STAFF_ROSTER,
@@ -311,15 +325,94 @@ def get_inputs(scenario: str = "default"):
     return scenarios[scenario].copy()
 
 
+def run_from_csv():
+    """
+    Run the CSV-driven pipeline: one patient per row from demo_patients.csv.
+    For each patient: model 1 (bed need); if >35% then model 2 (length of stay).
+    Patient assignment updates hospital space and patients array.
+    After all patients: nurse schedule for next 12h only (4 nurses per occupied room, 15/20/30 min slots).
+    Writes output to output/: final_allocations.json, patient_view.json, nurse_view.json, hospital_space.json.
+    """
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s [%(name)s] %(message)s",
+    )
+    csv_path = os.environ.get("CREWAI_CSV_PATH", "")
+    if not csv_path:
+        csv_path = None  # use default in pipeline
+    room_ids_str = os.environ.get("CREWAI_ROOM_IDS", "")
+    hospital_room_ids = [s.strip() for s in room_ids_str.split(",") if s.strip()] if room_ids_str else None
+    roster_str = os.environ.get("CREWAI_ROSTER", "")
+    roster = None
+    if roster_str:
+        try:
+            roster = json.loads(roster_str)
+            if not isinstance(roster, list):
+                roster = None
+        except json.JSONDecodeError:
+            roster = None
+    try:
+        result = run_csv_pipeline(csv_path=csv_path, hospital_room_ids=hospital_room_ids, roster=roster)
+        paths = write_pipeline_output(result, OUTPUT_DIR)
+        print("CSV pipeline output written to:")
+        for p in paths:
+            print("  ", os.path.abspath(p))
+    except Exception as e:
+        raise Exception(f"CSV pipeline error: {e}") from e
+
+
+def run_two_batches_25():
+    """
+    Test: run pipeline for 25 patients, then another 25 patients.
+    Writes to output/batch_test/batch_01_first_25/ and output/batch_test/batch_02_next_25/.
+    """
+    from pathlib import Path
+    import logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(levelname)s [%(name)s] %(message)s",
+    )
+    base_out = Path(OUTPUT_DIR) / "batch_test"
+    base_out.mkdir(parents=True, exist_ok=True)
+    print("Running pipeline: first 25 patients (rows 0–24)...")
+    result1 = run_csv_pipeline(max_patients=25, start_index=0)
+    out1 = base_out / "batch_01_first_25"
+    paths1 = write_pipeline_output(result1, str(out1))
+    print(f"  Wrote {len(paths1)} files to {out1}")
+    for p in paths1:
+        print(f"    - {Path(p).name}")
+    print("\nRunning pipeline: next 25 patients (rows 25–49) using state from batch 1...")
+    result2 = run_csv_pipeline(
+        max_patients=25,
+        start_index=25,
+        initial_hospital_space=result1["hospital_space"],
+    )
+    out2 = base_out / "batch_02_next_25"
+    paths2 = write_pipeline_output(result2, str(out2))
+    print(f"  Wrote {len(paths2)} files to {out2}")
+    for p in paths2:
+        print(f"    - {Path(p).name}")
+    print(f"\nDone. Outputs under: {base_out}")
+
+
 def run():
     """
     Run the crew. Scenario from CREWAI_SCENARIO env var: default | critical | complex | waitlist.
+    Writes final allocations to output/: final_allocations.json, nurse_view.json, patient_view.json.
     """
     scenario = os.environ.get("CREWAI_SCENARIO", "default")
     inputs = get_inputs(scenario)
 
     try:
-        MyCrew().crew().kickoff(inputs=inputs)
+        result = MyCrew().crew().kickoff(inputs=inputs)
+        paths = write_allocation_output(result, output_dir=OUTPUT_DIR)
+        if paths:
+            print("Allocation output written to:")
+            for p in paths:
+                print("  ", os.path.abspath(p))
+        else:
+            print("No orchestrator output found; output files were not written. Check that the crew completed and the last task returned allocations.")
     except Exception as e:
         raise Exception(f"An error occurred while running the crew: {e}")
 
@@ -383,6 +476,13 @@ def run_with_trigger():
 
     try:
         result = MyCrew().crew().kickoff(inputs=inputs)
+        paths = write_allocation_output(result, output_dir=OUTPUT_DIR)
+        if paths:
+            print("Allocation output written to:")
+            for p in paths:
+                print("  ", os.path.abspath(p))
+        else:
+            print("No orchestrator output found; output files were not written.")
         return result
     except Exception as e:
         raise Exception(f"An error occurred while running the crew with trigger: {e}")

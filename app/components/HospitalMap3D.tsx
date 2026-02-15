@@ -14,10 +14,12 @@ const HALLWAY_WIDTH = 1.8;
 
 type DoorSide = 'north' | 'south' | 'east' | 'west';
 
-// Layout: rooms numbered sequentially going around. Room 0 = left of hallway (west).
-// Order: West 0,1,2 → NW corner 3 → North 4,5,6 → NE corner 7 → East 8,9,10 → SE corner 11 → South 12,13 → SW corner 14.
+// Layout: center, hallway, rooms numbered sequentially. Room 0 = left of hallway (west).
+// Order: West (0,1,2) south→north, North (3,4,5) west→east, East (6,7,8) south→north, South (9,10) west→east, Corners (11–14).
+// Rooms are numbered R1, R2, R3... to match backend data (15 rooms per floor, 4 floors = R1-R60)
 function getRoomLayout(_rows: number, _cols: number, selectedFloor: number) {
-  const base = selectedFloor * 100;
+  // Calculate base room number: Floor 1 = 1-15, Floor 2 = 16-30, Floor 3 = 31-45, Floor 4 = 46-60
+  const base = (selectedFloor - 1) * 15 + 1;
   const layout: { roomId: string; x: number; z: number; doorSide: DoorSide; isCorner?: boolean }[] = [];
   const out = CENTER_SIZE / 2 + HALLWAY_WIDTH;
   const roomDepth = ROOM_D;
@@ -467,7 +469,7 @@ export function HospitalMap3D({
 
     const backLight = new THREE.DirectionalLight(0xffffff, 0.35);
     backLight.position.set(0, 8, -10);
-  scene.add(backLight);
+    scene.add(backLight);
 
     addCenterAndHallway(scene);
 
@@ -526,6 +528,7 @@ export function HospitalMap3D({
     canvas.addEventListener('click', onClick);
 
     function resize() {
+      if (!container) return;
       const width = container.clientWidth;
       const height = container.clientHeight;
       if (width === 0 || height === 0) return;

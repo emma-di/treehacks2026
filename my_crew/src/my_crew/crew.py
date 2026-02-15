@@ -3,8 +3,14 @@ from crewai.project import CrewBase, agent, crew, task
 from crewai.agents.agent_builder.base_agent import BaseAgent
 from typing import List
 
-from my_crew.output_schemas import RiskAssessmentOutput
-from my_crew.tools import FilterResourcesTool, GreedyAllocationTool, GreedyAllocationBatchTool
+from my_crew.output_schemas import OrchestratorOutput, RiskAssessmentOutput
+from my_crew.tools import (
+    FilterResourcesTool,
+    GreedyAllocationTool,
+    GreedyAllocationBatchTool,
+    PredictBedNeedTool,
+    PredictLengthOfStayTool,
+)
 # If you want to run a snippet of code before or after the crew starts,
 # you can use the @before_kickoff and @after_kickoff decorators
 # https://docs.crewai.com/concepts/crews#example-crew-class-with-decorators
@@ -26,6 +32,7 @@ class MyCrew():
     def risk_agent(self) -> Agent:
         return Agent(
             config=self.agents_config['risk_agent'], # type: ignore[index]
+            tools=[PredictBedNeedTool(), PredictLengthOfStayTool()],
             verbose=True
         )
 
@@ -65,6 +72,7 @@ class MyCrew():
     def orchestrator_task(self) -> Task:
         return Task(
             config=self.tasks_config['orchestrator_task'], # type: ignore[index]
+            output_pydantic=OrchestratorOutput,
         )
 
     @crew

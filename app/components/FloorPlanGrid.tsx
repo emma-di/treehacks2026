@@ -6,90 +6,68 @@ import dynamic from 'next/dynamic';
 import { X } from 'lucide-react';
 import Link from 'next/link';
 import { findProviderByName } from './ProviderView';
+import {
+    getRoomScheduleBlocks,
+    getPatientInRoom,
+    formatTime,
+    getRoomById,
+    getShortPatientId
+} from '../lib/scheduleData';
 
 const HospitalMap3D = dynamic(
-  () => import('./HospitalMap3D').then((m) => m.HospitalMap3D),
-  { ssr: false }
+    () => import('./HospitalMap3D').then((m) => m.HospitalMap3D),
+    { ssr: false }
 );
 
-// Mock data for room schedules - now with blocks spanning multiple hours
-const generateRoomSchedule = (roomNumber: string) => {
-    const patients = ['P027', 'P06', 'P143', 'P089'];
-    const patientConditions = [
-        'Post-operative observation required',
-        'Respiratory monitoring needed',
-        'Cardiac monitoring in progress',
-        'Pre-surgical preparation'
-    ];
+// Generate room schedule from real data
+const generateRoomSchedule = (roomId: string) => {
+    const room = getRoomById(roomId);
 
-    // Generate time slots from 00:00 to 12:00 in 30-minute increments
-    const times = Array.from({ length: 25 }, (_, i) => {
-        const hour = Math.floor(i / 2).toString().padStart(2, '0');
-        const minute = i % 2 === 0 ? '00' : '30';
-        return `${hour}:${minute}`;
-    });
+    // If room doesn't exist or has no schedule, return empty
+    if (!room || room.start === -1) {
+        return [];
+    }
 
-    // Patient blocks: longer stays (2.5 hours each) with 30-min gaps for room reset
-    const patientBlocks = [
-        { startIndex: 0, duration: 5, patient: patients[0], condition: patientConditions[0] },   // 00:00-02:30
-        // Gap: 02:30-03:00 for room reset
-        { startIndex: 6, duration: 5, patient: patients[1], condition: patientConditions[1] },   // 03:00-05:30
-        // Gap: 05:30-06:00 for room reset
-        { startIndex: 12, duration: 5, patient: patients[2], condition: patientConditions[2] },  // 06:00-08:30
-        // Gap: 08:30-09:00 for room reset
-        { startIndex: 18, duration: 5, patient: patients[3], condition: patientConditions[3] },  // 09:00-11:30
-        // Gap: 11:30-12:00 for room reset
-    ];
+    const scheduleBlocks = getRoomScheduleBlocks(roomId);
+    const patient = getPatientInRoom(roomId);
 
-    // Provider visits: shorter, intermittent (30 min each) - varied timing
-    const providerVisits = [
-        { index: 1, provider: 'M. Garcia', role: 'RN - Night Shift', type: 'nurse' },   // 00:30
-        { index: 3, provider: 'S. Chen', role: 'MD - Rounds', type: 'doctor' },   // 01:30
-        { index: 7, provider: 'K. Nguyen', role: 'RN - Medication', type: 'nurse' },   // 03:30
-        { index: 9, provider: 'J. Wilson', role: 'MD - Check-in', type: 'doctor' },  // 04:30
-        { index: 13, provider: 'R. Kim', role: 'RN - Vitals', type: 'nurse' },  // 06:30
-        { index: 15, provider: 'A. Brown', role: 'RN - Day Shift', type: 'nurse' },  // 07:30
-        { index: 19, provider: 'E. Thompson', role: 'MD - Rounds', type: 'doctor' },  // 09:30
-        { index: 21, provider: 'J. Patterson', role: 'RN - Medication', type: 'nurse' },  // 10:30
-    ];
+    // Always show full day(s) - from hour 0 to the end of schedule
+    // Ensure we show at least 48 hours (2 days) or up to the latest activity
+    const maxTime = Math.max(room.stop, patient?.stop || 0, 48);
+    const timeSlots: Array<{
+        time: string;
+        timeValue: number;
+        patient: string;
+        patientStart: number;
+        patientStop: number;
+        nurses: Array<{ id: string; start: number; stop: number }>;
+        isPatientBlockStart: boolean;
+        patientBlockDuration: number;
+    }> = [];
 
-    // Create schedule
-    const schedule = times.map((time, index) => {
-        // Find if this slot is part of a patient block
-        const patientBlock = patientBlocks.find(
-            block => index >= block.startIndex && index < block.startIndex + block.duration
-        );
+    // Generate ALL time slots without skipping - one slot per hour (not 0.5 hours)
+    for (let t = 0; t < maxTime; t += 1) {
+        const nurses = scheduleBlocks
+            .filter(block => block.type === 'nurse' && t >= block.start && t < block.stop)
+            .map(block => ({ id: block.id!, start: block.start, stop: block.stop }));
 
-        const isPatientBlockStart = patientBlocks.find(block => block.startIndex === index);
+        const isInPatientRange = patient && patient.start !== -1 && t >= patient.start && t < patient.stop;
+        const isPatientBlockStart = patient && patient.start !== -1 && t === patient.start;
 
-        // Find if this slot has a provider visit
-        const providerVisit = providerVisits.find(visit => visit.index === index);
+        timeSlots.push({
+            time: formatTime(t),
+            timeValue: t,
+            patient: isInPatientRange ? getShortPatientId(patient.id) : '',
+            patientStart: patient && patient.start !== -1 ? patient.start : -1,
+            patientStop: patient && patient.stop !== -1 ? patient.stop : -1,
+            nurses,
+            isPatientBlockStart: !!isPatientBlockStart,
+            // Duration is the number of hour slots spanned
+            patientBlockDuration: isPatientBlockStart ? Math.ceil(patient.stop - patient.start) : 0,
+        });
+    }
 
-        let endTime = '';
-        if (isPatientBlockStart) {
-            const endIndex = isPatientBlockStart.startIndex + isPatientBlockStart.duration;
-            if (endIndex < times.length) {
-                endTime = times[endIndex];
-            } else {
-                endTime = '12:00';
-            }
-        }
-
-        return {
-            time,
-            patient: patientBlock?.patient || '',
-            patientCondition: patientBlock?.condition || '',
-            provider: providerVisit?.provider || '',
-            providerRole: providerVisit?.role || '',
-            providerType: providerVisit?.type || '',
-            isBlockStart: !!isPatientBlockStart,
-            blockDuration: isPatientBlockStart?.duration || 0,
-            startTime: time,
-            endTime: endTime,
-        };
-    });
-
-    return schedule;
+    return timeSlots;
 };
 
 interface FloorPlanGridProps {
@@ -214,30 +192,39 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
                 }
               `}
                         </style>
-                        <table className="w-full border-collapse">
-                            <thead className="sticky top-0 bg-white border-b-2 border-gray-200 z-10">
-                                <tr className="text-center">
-                                    <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-20">Time</th>
-                                    <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-1/2">Patient</th>
-                                    <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 w-1/2">Provider</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {selectedRoomSchedule.map((slot, index) => {
-                                    return (
-                                        <tr
-                                            key={index}
-                                            className="border-b last:border-b-0"
-                                        >
-                                            <td className="text-sm text-gray-600 pr-3 text-center align-top w-20" style={{ height: '3.5rem', paddingTop: '0.875rem' }}>{slot.time}</td>
-                                            <td className="pr-3 align-top relative w-1/2" style={{ height: '3.5rem', padding: 0 }}>
-                                                {slot.patient && slot.isBlockStart && (() => {
-                                                    return (
+                        {selectedRoomSchedule.length === 0 ? (
+                            <div className="text-center py-8 text-gray-500">
+                                No schedule available for this room
+                            </div>
+                        ) : (
+                            <table className="w-full border-collapse">
+                                <thead className="sticky top-0 bg-white border-b-2 border-gray-200 z-10">
+                                    <tr className="text-center">
+                                        <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-24">Time</th>
+                                        <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 pr-3 w-1/2">Patient</th>
+                                        <th className="pb-3 pt-2 text-sm font-semibold text-gray-700 w-1/2">Nurses</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {selectedRoomSchedule.map((slot, index) => {
+                                        const ROW_HEIGHT = '4rem'; // Height for each 1-hour slot
+
+                                        return (
+                                            <tr
+                                                key={index}
+                                                className="border-b last:border-b-0"
+                                            >
+                                                <td className="text-sm text-gray-600 pr-3 text-center align-top w-24" style={{ height: ROW_HEIGHT, paddingTop: '1rem' }}>
+                                                    {slot.time}
+                                                </td>
+                                                <td className="pr-3 align-top relative w-1/2" style={{ height: ROW_HEIGHT, padding: 0 }}>
+                                                    {slot.patient && slot.isPatientBlockStart && (
                                                         <div
                                                             className="bg-blue-50 border-l-4 border-blue-500 rounded px-2.5 py-2 text-sm font-medium text-blue-700 absolute left-0 right-3"
                                                             style={{
                                                                 top: 0,
-                                                                height: `calc(${(slot.blockDuration + 1) * 3.5}rem)`,
+                                                                // Height = number of hours * row height
+                                                                height: `calc(${slot.patientBlockDuration} * ${ROW_HEIGHT})`,
                                                                 zIndex: 1
                                                             }}
                                                         >
@@ -249,53 +236,51 @@ export function FloorPlanGrid({ rows = 5, cols = 6 }: FloorPlanGridProps) {
                                                                 {slot.patient}
                                                             </Link>
                                                             <div className="text-xs text-blue-600 mt-0.5">
-                                                                {slot.startTime} - {slot.endTime}
+                                                                {formatTime(slot.patientStart)} - {formatTime(slot.patientStop)}
                                                             </div>
                                                             <div className="text-xs text-blue-500 mt-1 font-normal italic">
-                                                                {slot.patientCondition}
+                                                                In room for {(slot.patientStop - slot.patientStart).toFixed(1)} hours
                                                             </div>
                                                         </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                            <td className="align-top w-1/2" style={{ height: '3.5rem', paddingTop: '0.875rem' }}>
-                                                {slot.provider && (() => {
-                                                    const providerId = findProviderByName(slot.provider);
-                                                    return (
-                                                        <div
-                                                            className={`border-l-4 rounded px-3 py-2 text-sm font-medium ${slot.providerType === 'doctor'
-                                                                ? 'bg-purple-50 border-purple-500 text-purple-700'
-                                                                : 'bg-green-50 border-green-500 text-green-700'
-                                                                }`}
-                                                            style={{ zIndex: 2, position: 'relative' }}
-                                                        >
-                                                            <Link
-                                                                href={providerId ? `/provider?provider=${providerId}` : '#'}
-                                                                className="font-semibold hover:underline decoration-1 underline-offset-2 decoration-current/30"
-                                                                style={{
-                                                                    color: 'inherit',
-                                                                    cursor: providerId ? 'pointer' : 'default'
-                                                                }}
-                                                            >
-                                                                {slot.provider}
-                                                            </Link>
-                                                            <div className={`text-xs mt-0.5 ${slot.providerType === 'doctor' ? 'text-purple-600' : 'text-green-600'
-                                                                }`}>
-                                                                {slot.providerRole}
-                                                            </div>
-                                                            <div className={`text-xs mt-1 font-normal ${slot.providerType === 'doctor' ? 'text-purple-500' : 'text-green-500'
-                                                                }`}>
-                                                                30 min visit
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                                    )}
+                                                </td>
+                                                <td className="align-top w-1/2" style={{ height: ROW_HEIGHT, paddingTop: '1rem' }}>
+                                                    <div className="space-y-1">
+                                                        {slot.nurses.map((nurse, nurseIdx) => {
+                                                            // Show nurse if their assignment overlaps with this hour slot
+                                                            const nurseStartsInThisSlot = Math.floor(nurse.start) === slot.timeValue;
+                                                            if (!nurseStartsInThisSlot) return null;
+
+                                                            return (
+                                                                <div
+                                                                    key={nurseIdx}
+                                                                    className="bg-green-50 border-l-4 border-green-500 rounded px-3 py-2 text-sm font-medium text-green-700"
+                                                                    style={{ zIndex: 2, position: 'relative' }}
+                                                                >
+                                                                    <Link
+                                                                        href={`/provider?id=${nurse.id}`}
+                                                                        className="font-semibold hover:underline decoration-1 underline-offset-2 decoration-current/30"
+                                                                        style={{ color: 'inherit' }}
+                                                                    >
+                                                                        {nurse.id}
+                                                                    </Link>
+                                                                    <div className="text-xs text-green-600 mt-0.5">
+                                                                        {formatTime(nurse.start)} - {formatTime(nurse.stop)}
+                                                                    </div>
+                                                                    <div className="text-xs text-green-500 mt-1 font-normal">
+                                                                        Duration: {((nurse.stop - nurse.start) * 60).toFixed(0)} min
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        )}
                     </div>
                 </div>
             )}
