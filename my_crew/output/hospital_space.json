@@ -1,0 +1,254 @@
+{
+  "hospital_space": [
+    {
+      "id": "R1",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R2",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R3",
+      "start": 0.0,
+      "stop": 30.0
+    },
+    {
+      "id": "R4",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R5",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R6",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R7",
+      "start": 0.0,
+      "stop": 26.0
+    },
+    {
+      "id": "R8",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R9",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R10",
+      "start": 0.0,
+      "stop": 30.0
+    },
+    {
+      "id": "R11",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R12",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R13",
+      "start": 0.0,
+      "stop": 30.0
+    },
+    {
+      "id": "R14",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R15",
+      "start": 0.0,
+      "stop": 30.0
+    },
+    {
+      "id": "R16",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R17",
+      "start": 0.0,
+      "stop": 26.0
+    },
+    {
+      "id": "R18",
+      "start": 0.0,
+      "stop": 30.0
+    },
+    {
+      "id": "R19",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R20",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R21",
+      "start": 0.0,
+      "stop": 25.0
+    },
+    {
+      "id": "R22",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R23",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R24",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R25",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R26",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R27",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R28",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R29",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R30",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R31",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R32",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R33",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R34",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R35",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R36",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R37",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R38",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R39",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R40",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R41",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R42",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R43",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R44",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R45",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R46",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R47",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R48",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R49",
+      "start": -1,
+      "stop": -1
+    },
+    {
+      "id": "R50",
+      "start": -1,
+      "stop": -1
+    }
+  ]
+}
