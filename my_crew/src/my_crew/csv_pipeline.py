@@ -553,10 +553,13 @@ def run_csv_pipeline(
             roster.append({"name": name, "load": 0, "certifications": certs})
     # Apply nurse feedback: increase load for nurses who reported overwhelmed/missed visits (so they get fewer assignments next run)
     nurse_roster = _apply_feedback_load_to_roster(list(roster))
+    emit_event("nurse_scheduling_start", {
+        "message": "Assigning nurses to rooms...",
+        "total_rooms": len([r for r in hospital_space if r.get("start") != -1]),
+    })
     nurse_assignments = schedule_nurses_next_12h(
         hospital_space, nurse_roster, room_required_certs=room_required_certs
     )
-    
     emit_event("nurse_scheduling_complete", {
         "message": f"Nurse scheduling complete: {len(nurse_assignments)} assignments",
         "total_assignments": len(nurse_assignments)

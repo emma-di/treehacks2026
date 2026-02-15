@@ -19,23 +19,12 @@ export default function Agent() {
     const [isConnected, setIsConnected] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const eventSourceRef = useRef<EventSource | null>(null);
-    const eventsEndRef = useRef<HTMLDivElement>(null);
 
     // Chat state
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
-
-    const scrollToBottom = () => {
-        eventsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    useEffect(() => {
-        if (!isPaused) {
-            scrollToBottom();
-        }
-    }, [events, isPaused]);
 
     useEffect(() => {
         // Connect to SSE
@@ -142,6 +131,31 @@ export default function Agent() {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [chatMessages]);
 
+    // Derive patient list and per-patient progress from events
+    const { patientList, nurseStatus } = (() => {
+        const list: { id: string; model1Done: boolean; model2Done: boolean; roomDone: boolean }[] = [];
+        const seen = new Set<string>();
+        let nurseStarted = false;
+        let nurseComplete = false;
+        for (const e of events) {
+            const pid = e.data?.patient_id;
+            if (pid && !seen.has(pid)) {
+                seen.add(pid);
+                list.push({ id: pid, model1Done: false, model2Done: false, roomDone: false });
+            }
+            const idx = list.findIndex(p => p.id === pid);
+            if (idx >= 0) {
+                if (e.type === 'model_result' && e.data?.model === 'Risk Assessment Model 1') list[idx].model1Done = true;
+                if (e.type === 'model_result' && e.data?.model === 'Length of Stay Model 2') list[idx].model2Done = true;
+                if (e.type === 'patient_complete') list[idx].roomDone = true;
+            }
+            if (e.type === 'nurse_scheduling_start') nurseStarted = true;
+            if (e.type === 'nurse_scheduling_complete') nurseComplete = true;
+        }
+        const nurseStatus: 'pending' | 'running' | 'done' = nurseComplete ? 'done' : nurseStarted ? 'running' : 'pending';
+        return { patientList: list, nurseStatus };
+    })();
+
     const getEventStyle = (type: string) => {
         const styles: Record<string, string> = {
             pipeline_start: 'bg-blue-50 border-l-4 border-blue-500 text-blue-900',
@@ -207,58 +221,70 @@ export default function Agent() {
             </div>
 
             {/* Two column layout */}
-            <div className="flex-1 flex gap-4 px-6 pb-6 overflow-hidden">
-                {/* Event Monitor - Left side (65%) */}
-                <div className="flex-[0_0_65%] bg-white rounded-lg shadow-xl flex flex-col overflow-hidden">
-                    <div className="p-4 border-b bg-gray-50 flex-shrink-0">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-700">
-                                Event Stream
-                            </h3>
-                            <span className="text-sm text-gray-600">
-                                {events.length} events
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-900 font-mono text-sm">
-                        {events.length === 0 ? (
-                            <div className="text-center text-gray-500 py-8">
-                                <Activity className="size-12 mx-auto mb-2 opacity-50" />
-                                <p>No events yet. Run the pipeline to see activity.</p>
-                            </div>
-                        ) : (
-                            events.map((event, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`p-3 rounded ${getEventStyle(event.type)} transition-all duration-300`}
-                                    style={{
-                                        animation: idx === events.length - 1 ? 'slideIn 0.3s ease-out' : 'none'
-                                    }}
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <span className="text-2xl">{getEventIcon(event.type)}</span>
-                                        <div className="flex-1">
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="font-semibold">{event.type}</span>
-                                                <span className="text-xs opacity-75">
-                                                    {formatTimestamp(event.timestamp)}
-                                                </span>
-                                            </div>
-                                            <div className="text-sm">
-                                                {event.data.message || JSON.stringify(event.data)}
-                                            </div>
-                                            {event.data.patient_id && (
-                                                <div className="text-xs mt-1 opacity-75">
-                                                    Patient: {event.data.patient_id}
-                                                </div>
-                                            )}
-                                        </div>
+            <div className="flex-1 flex gap-4 px-6 pb-6 min-h-0 overflow-hidden">
+                {/* Left: scrollable list of patient progress bars + nurse row */}
+                <div className="flex-[0_0_65%] bg-white rounded-lg shadow-xl flex flex-col min-h-0 overflow-hidden">
+                    <div className="flex-1 overflow-y-auto p-4 min-h-0">
+                        <div className="space-y-4">
+                            {patientList.map((p) => (
+                                <div key={p.id} className="flex-shrink-0">
+                                    <div className="text-sm font-semibold text-gray-800 mb-1 truncate" title={p.id}>
+                                        Patient {p.id}
                                     </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="flex-1 min-w-0 h-7 rounded-lg overflow-hidden bg-blue-50 flex">
+                                            <div
+                                                className={`h-full transition-all duration-300 ${p.model1Done ? 'bg-blue-200' : 'bg-blue-100'}`}
+                                                style={{ width: '33.33%' }}
+                                            title="Risk agent: Needs bed?"
+                                        />
+                                            <div
+                                                className={`h-full transition-all duration-300 ${p.model2Done ? 'bg-blue-300' : 'bg-blue-100/80'}`}
+                                                style={{ width: '33.33%' }}
+                                                title="Risk agent: Length of stay"
+                                        />
+                                            <div
+                                                className={`h-full transition-all duration-300 ${p.roomDone ? 'bg-sky-200' : 'bg-sky-100'}`}
+                                                style={{ width: '33.33%' }}
+                                                title="Patient agent: Room"
+                                        />
+                                        </div>
+                                        <span className="text-xs text-gray-500 w-8 flex-shrink-0">
+                                            {[p.model1Done, p.model2Done, p.roomDone].filter(Boolean).length}/3
+                                        </span>
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">
+                                        Risk agent: Needs bed? · Length of stay &nbsp;|&nbsp; Patient agent: Room
+                                    </p>
                                 </div>
-                            ))
+                            ))}
+                            {/* Nurse agent - last row (runs after all patients; done by end of scheduling) */}
+                            <div className="flex-shrink-0 pt-3 mt-3 border-t border-blue-100">
+                                <div className="text-sm font-semibold text-gray-800 mb-1">Nurse agent</div>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 min-w-0 h-7 rounded-lg overflow-hidden bg-blue-50">
+                                        <div
+                                            className={`h-full transition-all duration-300 ${nurseStatus === 'done' ? 'bg-blue-400' : nurseStatus === 'running' ? 'bg-blue-200' : 'bg-blue-100'}`}
+                                            style={{
+                                                width: nurseStatus === 'done' ? '100%' : nurseStatus === 'running' ? '50%' : '0%',
+                                            }}
+                                            title={nurseStatus === 'done' ? 'Assigns nurses to rooms — done' : nurseStatus === 'running' ? 'Assigning nurses to rooms...' : 'Runs after all patients'}
+                                        />
+                                    </div>
+                                    <span className="text-xs text-gray-500 w-16 flex-shrink-0">
+                                        {nurseStatus === 'done' ? 'Done' : nurseStatus === 'running' ? 'In progress' : 'Pending'}
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">
+                                    Assigns nurses to rooms (runs after all patients)
+                                </p>
+                            </div>
+                        </div>
+                        {patientList.length === 0 && nurseStatus === 'pending' && (
+                            <div className="text-center text-gray-400 py-12 text-sm">
+                                Run the pipeline to see patient progress.
+                            </div>
                         )}
-                        <div ref={eventsEndRef} />
                     </div>
                 </div>
 
