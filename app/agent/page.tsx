@@ -133,7 +133,14 @@ export default function Agent() {
 
     // Derive patient list and per-patient progress from events
     const { patientList, nurseStatus } = (() => {
-        const list: { id: string; model1Done: boolean; model2Done: boolean; roomDone: boolean }[] = [];
+        const list: {
+            id: string;
+            model1Done: boolean;
+            model2Done: boolean;
+            roomDone: boolean;
+            needsBed: boolean | null;
+            lengthOfStay: number | null;
+        }[] = [];
         const seen = new Set<string>();
         let nurseStarted = false;
         let nurseComplete = false;
@@ -141,12 +148,26 @@ export default function Agent() {
             const pid = e.data?.patient_id;
             if (pid && !seen.has(pid)) {
                 seen.add(pid);
-                list.push({ id: pid, model1Done: false, model2Done: false, roomDone: false });
+                list.push({
+                    id: pid,
+                    model1Done: false,
+                    model2Done: false,
+                    roomDone: false,
+                    needsBed: null,
+                    lengthOfStay: null,
+                });
             }
             const idx = list.findIndex(p => p.id === pid);
             if (idx >= 0) {
-                if (e.type === 'model_result' && e.data?.model === 'Risk Assessment Model 1') list[idx].model1Done = true;
-                if (e.type === 'model_result' && e.data?.model === 'Length of Stay Model 2') list[idx].model2Done = true;
+                if (e.type === 'model_result' && e.data?.model === 'Risk Assessment Model 1') {
+                    list[idx].model1Done = true;
+                    if (typeof e.data?.needs_bed === 'boolean') list[idx].needsBed = e.data.needs_bed;
+                }
+                if (e.type === 'model_result' && e.data?.model === 'Length of Stay Model 2') {
+                    list[idx].model2Done = true;
+                    const los = e.data?.length_of_stay;
+                    if (typeof los === 'number' && los >= 0) list[idx].lengthOfStay = los;
+                }
                 if (e.type === 'patient_complete') list[idx].roomDone = true;
             }
             if (e.type === 'nurse_scheduling_start') nurseStarted = true;
@@ -254,7 +275,13 @@ export default function Agent() {
                                         </span>
                                     </div>
                                     <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">
-                                        Risk agent: Needs bed? · Length of stay &nbsp;|&nbsp; Patient agent: Room
+                                        {p.needsBed === true && 'Needs bed'}
+                                        {p.needsBed === false && "Doesn't need bed"}
+                                        {p.needsBed === null && '—'}
+                                        {' · '}
+                                        {p.lengthOfStay !== null && p.lengthOfStay >= 0 ? `${p.lengthOfStay} h` : '—'}
+                                        {' · '}
+                                        Room{p.roomDone ? ' done' : ' —'}
                                     </p>
                                 </div>
                             ))}
