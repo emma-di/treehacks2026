@@ -48,7 +48,7 @@ The home page is the main entry point. It explains the system and lets you jump 
 
 ### 1. Globe and hospital sites
 
-- The **3D globe** shows four hospital sites (e.g. Stanford Health Care, XX Hospital, XY Hospital, Local Hospital) as points on the sphere.
+- The **3D globe** shows hospital sites as points on the sphere.
 - **Gold ties** connect each site to the **“Global Model”** label above the globe. These ties represent participation in **federated learning**: each site can contribute to (and use) the shared global model.
 - **Labels** on the front of the globe are white with a gold border; labels on the back appear as translucent navy so they don’t obscure the view.
 - You can **click a hospital** to go to its floor plan and local system (`/hospital/local`).
